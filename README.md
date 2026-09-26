@@ -124,8 +124,10 @@ Python 3.9+, standard library only; probe_check.py also needs Google Chrome or C
 90 checks in explorer_check.py and concept.py were broken on purpose, one at a time, in a sandbox copy,
 each turning the sample written for it red, none by a crash; so were 40 checks in probe_check.py, each against
 a page broken in the way that check is there to catch (or, for the checks on how Chrome is run, a stand-in Chrome).
-The 120 lines of those scripts that report a finding were read from the source, not listed by hand: 6 only pass on what other lines found, and 1 is left out of the matrices
-because broken on its own it only crashes; it is broken and run anyway, so the evidence shows the crash. Opened in Chrome, a page with an outside font,
+The 120 lines of those scripts that the matrices' pattern takes for reporting a finding were read from the source, not listed by hand: 6 only pass on what other lines found, and 1 is left out of the matrices. The one left out (a control that is not an object) is broken and run anyway: on a malformed control alone it crashes,
+but with a second problem in the same concept it drops its own message without a crash, and no sample catches that.
+The lines that print the findings and set the exit code, and explorer_check.py's line that passes on concept.py's
+findings, are not among the lines read; no matrix breaks them (see Limits). Opened in Chrome, a page with an outside font,
 an image list, an @import and an indirect eval added loaded none of them and ran no eval; a meta refresh, which no
 policy stops, is what explorer_check.py names. The page's formula language and its Python twin gave the same numbers
 and the same text on 2084 cases; on both the line with numbers worked out to the result, and
@@ -141,7 +143,9 @@ make_explorer.py has a self-test but no break matrix.
 - **The chart moves one control and holds the rest where they are.** It is a slice, not a map of everything.
 - **Answers are read as plain numbers.** The result's unit, a currency sign and % are removed; commas may only separate groups of three digits (2,318.55), and e-notation is read because the page writes very large and very small results that way. A decimal comma (2318,55), a misplaced comma (23,18.55) and hex (0x90F) are not numbers here: the page says "Type a number."
 - **It cannot tell whether the formula fits a case.** The page says where the formula comes from and what it leaves out; whether it applies to somebody's own loan or experiment is theirs to judge, and the footer says so.
-- **The checks read the page as built.** An edit that leaves the policy line alone cannot make the page load or run anything new: the browser holds the page to it, and a script changed without its hash does not run at all. An edit that removes or loosens the policy line can, and explorer_check.py refuses such a page (E09). Text can be changed to say anything. Run explorer_check.py and probe_check.py again after any edit, or build the page again.
+- **The checks read the page as built, and the policy does not hold every edit.** Tested in Chrome, the page's policy stops an outside font, image or stylesheet, an @import and eval, and a script changed without its hash does not run. It does not stop: an edit that removes or loosens the policy line (explorer_check.py refuses that page, E09); anything placed before the policy line, which makes Chrome ignore the policy (E09 names such a page); a meta refresh (E09 names it); a script that navigates away (`location.assign`, `location =`, `window.open`), which explorer_check.py does not name; and a script whose hashes are written again after the edit, which then runs. Text can be changed to say anything. Run explorer_check.py and probe_check.py again after any edit, or build the page again.
+- **E10 covers the usual ways of writing markup, not all of them.** It names innerHTML, outerHTML, insertAdjacentHTML and the others it lists, written that way; `el["inner" + "HTML"] = …` or `setHTMLUnsafe(…)` added to a page with its hashes written again gets no finding.
+- **The checkers' own command lines are not break-tested.** The break matrices cover the lines that report a finding, not the lines that print the findings and set the exit code, nor explorer_check.py's line that passes on concept.py's findings. Changing explorer_check.py's exit code to 0 left every self-test green; a run then prints its findings but exits 0.
 
 ## License
 

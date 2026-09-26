@@ -63,8 +63,9 @@ so what you read is what it calculated.
    policy, the policy is the one make_explorer.py writes and still matches the page's scripts, and the usual ways a
    page asks for something from outside are named so they can be taken out (an outside address in an attribute or a
    style, a link to any file, srcset, @import, a meta refresh, fetch and the rest; a file next to the page, such as
-   src="px.png", is not named — the policy stops the browser loading it) · E10 text written as text, no markup from
-   script, and not the name eval anywhere in the script · E11 colours from the tokens ·
+   src="px.png", is not named — the policy stops the browser loading it) · E10 text written as text, none of the
+   usual ways of writing markup from script (innerHTML and the others it lists), and not the name eval anywhere in
+   the script · E11 colours from the tokens ·
    E12 no icon characters · E13 a footer that says what is left out, where the formula comes from, and that it is
    not advice · E14 the page reads its concept and carries its probe.
 7. **Run it**: `python3 ${CLAUDE_SKILL_DIR}/scripts/probe_check.py page.html` opens the page in Chrome with
@@ -117,10 +118,21 @@ so what you read is what it calculated.
   here: the page says "Type a number."
 - **It cannot tell whether the formula fits a case.** The page says where the formula comes from and what it
   leaves out; whether it applies to somebody's own loan or experiment is theirs to judge, and the footer says so.
-- **The checks read the page as built.** An edit that leaves the policy line alone cannot make the page load or run
-  anything new: the browser holds the page to it, and a script changed without its hash does not run at all. An edit
-  that removes or loosens the policy line can, and explorer_check.py refuses such a page (E09). Text can be changed
-  to say anything. Run explorer_check.py and probe_check.py again after any edit, or build the page again.
+- **The checks read the page as built, and the policy does not hold every edit.** Tested in Chrome, the page's
+  policy stops an outside font, image or stylesheet, an @import and eval, and a script changed without its hash does
+  not run. It does not stop: an edit that removes or loosens the policy line (explorer_check.py refuses that page,
+  E09); anything placed before the policy line, which makes Chrome ignore the policy (E09 names such a page); a meta
+  refresh (E09 names it); a script that navigates away (`location.assign`, `location =`, `window.open`), which
+  explorer_check.py does not name; and a script whose hashes are written again after the edit, which then runs.
+  Text can be changed to say anything. Run explorer_check.py and probe_check.py again after any edit, or build the
+  page again.
+- **E10 covers the usual ways of writing markup, not all of them.** It names innerHTML, outerHTML,
+  insertAdjacentHTML and the others it lists, written that way; `el["inner" + "HTML"] = …` or `setHTMLUnsafe(…)`
+  added to a page with its hashes written again gets no finding.
+- **The checkers' own command lines are not break-tested.** The break matrices cover the lines that report a
+  finding, not the lines that print the findings and set the exit code, nor explorer_check.py's line that passes on
+  concept.py's findings. Changing explorer_check.py's exit code to 0 left every self-test green; a run then prints
+  its findings but exits 0.
 
 ## Provenance
 

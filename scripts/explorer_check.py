@@ -16,7 +16,7 @@ the same rules make_explorer.py applies before it builds). Then the page itself:
        an @import, a <meta http-equiv> refresh (a policy cannot stop one), fetch, XMLHttpRequest, sockets, beacons,
        workers and dynamic import. An attribute naming a file next to the page (src="px.png") is not named here;
        the policy stops the browser loading it
-  E10  the page writes text, never markup or code: no innerHTML/outerHTML/insertAdjacentHTML/createContextualFragment,
+  E10  the page writes text, not markup or code, by the ways listed here: no innerHTML/outerHTML/insertAdjacentHTML/createContextualFragment,
        DOMParser, eval (called in any way), new Function, document.write, string timers, script elements made from
        the script, and no on...= handlers or javascript: addresses in the markup (read as tags, so a question that
        happens to contain "only =" is not a handler). "eval" means the name anywhere in the page's script — eval(…),
@@ -152,7 +152,7 @@ def check_text(page):
     for rx, what in NETWORK:
         if rx.search(js):
             found.append(("E09", f"the page's script uses {what}; the page talks to nothing outside itself"))
-    # E10 text, never markup or code
+    # E10 text, not markup or code, by the listed ways
     for rx, what in CODE:
         if rx.search(js):
             found.append(("E10", f"the page's script uses {what}; it writes text with textContent and runs only its own code"))
