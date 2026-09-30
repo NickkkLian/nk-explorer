@@ -21,7 +21,7 @@ part of the same ground, where there is one — rows with none are the ones only
 | 13 | Narrow the window to a phone width. | Nothing overflows sideways, the panels stack, the chart's labels stay readable, and a long formula wraps. | — |
 | 14 | Use the keyboard only. | Every slider moves with the arrow keys, every button can be reached with Tab and shows a focus ring, and Enter in an answer box checks it. | — |
 | 15 | Open the file with the network switched off. | It renders and works. | E09 |
-| 16 | Read the page's source, second line of its head. | A Content-Security-Policy with `default-src 'none'` and three `sha256-` hashes: the browser runs those three scripts and loads nothing. | E09 |
+| 16 | Read the page's source, second line of its head. | A Content-Security-Policy with `default-src 'none'` and four `sha256-` hashes: the browser runs those four scripts (the template's three and the number-sources runtime) and loads nothing. | E09 |
 
 Eleven of these sixteen rows name a machine rule; five (1, 2, 12, 13 and 14) have none.
 Even a named rule covers only part of its row: E13 can see that the footer has notes, not that they are

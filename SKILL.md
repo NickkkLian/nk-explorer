@@ -5,7 +5,7 @@ license: MIT
 compatibility: standard library only, no packages and no build step; the page it writes has no dependencies, evaluates its formula without eval, and carries a Content-Security-Policy under which the browser loads nothing from anywhere and runs no code but its own. probe_check.py needs Google Chrome or Chromium; without one, open the page with ?probe=1 in any browser.
 metadata:
   provenance: own practice (2026-09) — the "show the query behind every click, grade on the result" idea from Query Mirror, a SQL teaching tool of mine, carried over to formulas; see Provenance
-  version: 0.1.1
+  version: 0.1.2
 ---
 # Concept explorer
 
@@ -55,7 +55,7 @@ so what you read is what it calculated.
    question that leaves a control unset or never states a value it uses, a tolerance another answer would pass, a
    reach question nothing passes or that the starting values already pass, a slider position that would show more
    digits than a readout has. The page is the template with your concept in it and the design tokens written in:
-   one file, sealed — its Content-Security-Policy names the page's own three scripts by their SHA-256, so the
+   one file, sealed — its Content-Security-Policy names the page's own four scripts by their SHA-256, so the
    browser runs those and nothing else, loads nothing from any file or address, and runs no string as code. While you are still shaping the concept,
    `python3 ${CLAUDE_SKILL_DIR}/scripts/concept.py concept.json` lists the problems without building anything.
 6. **Check the file**: `python3 ${CLAUDE_SKILL_DIR}/scripts/explorer_check.py page.html` — the concept rules again,
@@ -80,6 +80,19 @@ so what you read is what it calculated.
    rather than blaming the page), open `page.html?probe=1` in any browser; its own summary is at the foot of the page.
 8. **Open it and move everything** — `references/acceptance.md` is the walk-through: what a person checks that no
    script can, such as whether the ranges make sense and whether the notes say what the formula really leaves out.
+
+## Clickable number sources
+
+Click the result or a control's readout and a panel shows where it comes from: for the result, the formula with the
+numbers as they are set now (brought up to date after every move) and the concept's notes on what the formula leaves
+out; for a readout, the slider's range. The runtime is the page's fourth script, named by its hash in the page's policy
+like the other three.
+
+The panel is the shared number-sources layer that nk-design, nk-data-story, nk-deck, nk-model and nk-explorer all
+use, the same three files in each (`scripts/numsrc.py`, `assets/numsrc.js`, `assets/numsrc.css`): Tab to a number, Enter
+or Space opens it, Esc closes it and puts the focus back; printed, the numbers are plain text. `python3
+${CLAUDE_SKILL_DIR}/scripts/numsrc.py check page.html` checks a page: every marked number has an entry, every entry says
+where from, how and what was not checked, and the runtime is the shipped one, byte for byte.
 
 ## Rules that keep it honest
 

@@ -11,7 +11,7 @@ practice questions. references/concept-format.md lists every field; assets/conce
 
 The page is this skill's template (assets/starter.html) with the concept block replaced and the design tokens
 written into it, so the result is one file that opens anywhere. Last, the page is sealed: its Content-Security-Policy
-(the second line of its head) is written to allow exactly the page's own three scripts, by their SHA-256, and nothing
+(the second line of its head) is written to allow exactly the page's own four scripts (the template's three and the number-sources runtime), by their SHA-256, and nothing
 else — no file or address to load anything from (only data: images), and no string run as code. The browser enforces
 it, so an outside font, a tracking pixel or an eval() added to the page later does not run, and a script changed
 after sealing does not run at all. Before writing anything the concept is checked
@@ -27,6 +27,7 @@ sys.dont_write_bytecode = True
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import concept as K
+import numsrc  # the clickable number sources layer shared with the other nk-* page skills
 
 ASSETS = os.path.join(HERE, "..", "assets")
 TEMPLATE = os.path.join(ASSETS, "starter.html")
@@ -93,7 +94,32 @@ def render(concept, template=None, tokens=None, formula_js=None):
     page = re.sub(r"<title>.*?</title>", lambda _: "<title>" + H.escape(concept["title"], quote=False) + "</title>", page, count=1)
     page = re.sub(r'<meta name="description" content="[^"]*">',
                   lambda _: '<meta name="description" content="' + H.escape(concept["question"]) + '">', page, count=1)
-    return seal(page.replace(LINK, '<style id="design-tokens">\n' + tokens.strip() + "\n</style>", 1))
+    page = numsrc.inject(page.replace(LINK, '<style id="design-tokens">\n' + tokens.strip() + "\n</style>", 1), sources(concept))
+    return seal(page)
+
+
+VERSION = "0.1.2"   # written into the sources manifest as the generator
+
+
+def sources(concept):
+    """the manifest behind the page's clickable numbers: the result and each control's readout. The numbers move
+    with the sliders, so the entries are live: the page brings the result's entry up to date after every move."""
+    notes = [str(n) for n in concept.get("notes") or [] if str(n).strip()]
+    src = numsrc.Sources(f"nk-explorer {VERSION}", not_checked=["Whether this formula fits your own case: the page explains a concept and gives no advice."])
+    r = concept["result"] if isinstance(concept.get("result"), dict) else {}
+    if not r.get("name"):
+        return src.add("result", "the result", [{"text": "the controls as they are set on the page"}], "formula", str(concept.get("formula")),
+                       ["The concept could not be read, so nothing about this number was checked."], live=True) or src
+    src.add("result", r.get("label") or r["name"], [{"text": "the controls as they are set on the page"}], "formula",
+            f"{r['name']} = {concept['formula']}", (["What the formula leaves out: " + n for n in notes] or
+            ["What the formula leaves out was not written down."]) + [f"Where the formula comes from: {concept.get('source', '')}".strip()],
+            command="python3 scripts/make_explorer.py concept.json -o page.html", live=True)
+    for c in [c for c in concept.get("controls") or [] if isinstance(c, dict) and c.get("name")]:
+        src.add("control." + c["name"], f"{c.get('label') or c['name']} ({c['name']})",
+                [{"text": f"set with its slider, from {c['min']} to {c['max']} in steps of {c['step']}"}], "input",
+                "the slider's position: a value you choose, not a measurement",
+                ["Whether this range is a sensible one for your case."], live=True)
+    return src
 
 
 def build(src, out):
@@ -136,9 +162,9 @@ def selftest():
         "".join(f"\n        {c} {m}" for c, m in X.check_text(page)))
     say(LINK not in page and page.count('<style id="design-tokens">') == 1, "the tokens are written into the page, not linked")
     hashes = script_hashes(page)
-    say(len(hashes) == 3 and CSP_META.search(page).group(0) == '<meta http-equiv="Content-Security-Policy" content="' + policy(hashes) + '">'
+    say(len(hashes) == 4 and CSP_META.search(page).group(0) == '<meta http-equiv="Content-Security-Policy" content="' + policy(hashes) + '">'
         and "'unsafe-eval'" not in page and page.index("Content-Security-Policy") < page.index("<script"),
-        "the page is sealed: its policy, ahead of every script, allows exactly its three scripts by hash and no eval")
+        "the page is sealed: its policy, ahead of every script, allows exactly its four scripts by hash (the three of the template and the number-sources runtime) and no eval")
     back, _ = K.read(page)
     say(back == starter, "the concept read back out of the built page is the concept that went in")
     examples = sorted(f for f in os.listdir(os.path.join(ASSETS, "concepts")) if f.endswith(".json"))

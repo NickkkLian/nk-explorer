@@ -102,7 +102,7 @@
       <h2 id="h-mirror">The formula it changes</h2>
       <p class="line sym"><span id="m-res"></span> = <span id="m-sym"></span></p>
       <p class="line with">= <span id="m-with"></span></p>
-      <p class="line out" aria-live="polite">= <b id="m-out"></b></p>
+      <p class="line out" aria-live="polite">= <b id="m-out" data-nk-src="result"></b></p>
       <p class="err" id="m-err" role="status"></p>
       <dl class="where" id="m-where"></dl>
       <p class="how">The marked number is the one you just moved. All three lines are written from the formula the result is computed with.</p>
@@ -483,7 +483,7 @@ var Formula = (function () {
     var row = document.createElement("div"); row.className = "control";
     var id = "c-" + c.name;
     var label = document.createElement("label"); label.htmlFor = id; label.textContent = c.label + " (" + c.name + ")";
-    var out = document.createElement("output"); out.id = id + "-v"; out.htmlFor = id;
+    var out = document.createElement("output"); out.id = id + "-v"; out.htmlFor = id; out.setAttribute("data-nk-src", "control." + c.name);
     var input = document.createElement("input");
     input.type = "range"; input.id = id; input.min = c.min; input.max = c.max; input.step = c.step; input.value = c.value;
     input.addEventListener("input", function () { values[c.name] = Number(input.value); lastChanged = c.name; render(); });
@@ -512,8 +512,19 @@ var Formula = (function () {
       if (!(e instanceof Formula.FormulaError)) throw e;
       $("m-out").textContent = "no value"; $("m-err").textContent = "Here the formula has no value: " + e.message + ".";
     }
+    sources();
     drawChart();
   }
+
+  /* ---- where each number comes from (nk-sources): click the result or a readout. make_explorer.py writes each
+     entry; the result's entry is brought up to date with the formula line as it stands after every move ---- */
+  function sources() {
+    if (!window.NkSources) return;
+    var set = C.controls.map(function (c) { return c.name + " = " + withUnit(values[c.name], c); }).join(", ");
+    NkSources.update("result", {from: [{text: "the controls as they are set now: " + set}],
+      how: {kind: "formula", text: C.result.name + " = " + $("m-sym").textContent + "\n= " + $("m-with").textContent}});
+  }
+  addEventListener("DOMContentLoaded", sources);
 
   function el(name, attrs, text) {
     var n = document.createElementNS(SVGNS, name);

@@ -17,6 +17,7 @@ section below says which of them were broken on purpose before release to prove 
 - `scripts/explorer_check.py`: fourteen rules on the finished file — the seven again, read back out of the page, then the formula language unchanged, the page's policy in place and still matching its scripts (and the usual ways a page asks for something from outside named, so they can be taken out), text written as text with no eval, colours from the tokens, no icon characters, a footer that says what is left out, and the page wired to its concept.
 - `scripts/probe_check.py`: opens the page in Chrome with `?probe=1`. The page moves every slider and answers every question through its own buttons; the script recomputes what it recorded — the formula line, the result and every readout at each state it records, and every grading — with `scripts/formula.py`, a second, Python implementation of the page's formula language, and `scripts/concept.py`, the concept rules. Without Chrome, open `page.html?probe=1` yourself; the page's own summary is at the foot.
 - Standard library only (probe_check.py also needs Chrome). The page it writes has no dependencies and no build step.
+- Click the result or a readout to see the formula with the current numbers and what the formula leaves out (the shared number-sources layer, `numsrc.py`).
 
 The full procedure, the boundaries and where the rules came from are in [SKILL.md](SKILL.md).
 
@@ -117,6 +118,7 @@ python3 scripts/concept.py --selftest
 python3 scripts/explorer_check.py --selftest
 python3 scripts/formula.py --selftest
 python3 scripts/make_explorer.py --selftest
+python3 scripts/numsrc.py --selftest
 python3 scripts/probe_check.py --selftest
 ```
 
@@ -135,6 +137,9 @@ both gave the round() answers in a table worked out by hand. A formatter planted
 at once, were the old writer that put 1 × -3^2 for x = -3 and the 0.1.0 round(), floor() and ceil(), which rounded the
 binary working and gave 88.82 for round(8.5 × 10.45, 2) and 8 for ceil(2.1 ÷ 0.3), where the answers by hand are 88.83 and 7.
 make_explorer.py has a self-test but no break matrix.
+numsrc.py, the number-sources layer shared with four other skills: each of its 16 lines that report a
+finding was disabled in a sandbox copy, found by reading the source rather than listed by hand, and its self-test went
+red each time; the unmutated copy stayed green.
 
 ## Limits
 
