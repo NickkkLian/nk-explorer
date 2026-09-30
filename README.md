@@ -2,7 +2,7 @@
 
 ![nk-explorer](https://raw.githubusercontent.com/NickkkLian/nickkk-skills/main/gallery/social/nk-explorer.png)
 
-A [Claude Code](https://code.claude.com) skill. Turn a concept that can be written as one formula — compound interest, a loan's monthly payment, the chance of at least one success — into one self-contained HTML page where every slider shows the formula it changes, written with names and with the current numbers, beside the result and a curve, plus practice questions graded on the result rather than on how it was reached.
+A [Claude Code](https://code.claude.com) skill. Turn a concept that can be written as one formula — compound interest, a loan's monthly payment, the chance of at least one success — into one self-contained HTML page where every slider shows the formula it changes, written with names and with current numbers, beside the result and a curve, plus practice questions graded on the result, not on how it was reached.
 
 Part of [nickkk-skills](https://github.com/NickkkLian/nickkk-skills) — agent skills that ship a self-test with every script; the Verify
 section below says which of them were broken on purpose before release to prove they react.
