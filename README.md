@@ -1,8 +1,57 @@
 # nk-explorer
 
-![nk-explorer](https://raw.githubusercontent.com/NickkkLian/nickkk-skills/main/gallery/social/nk-explorer.png)
+A [Claude Code](https://code.claude.com) skill. Turn a concept that can be written as one formula into one self-contained HTML page: every slider shows the formula it changes, and the page grades its own practice questions.
 
-A [Claude Code](https://code.claude.com) skill. Turn a concept that can be written as one formula — compound interest, a loan's monthly payment, the chance of at least one success — into one self-contained HTML page where every slider shows the formula it changes, written with names and with current numbers, beside the result and a curve, plus practice questions graded on the result, not on how it was reached.
+**What you get.** The page `make_explorer.py` builds from the bundled loan-payment concept: three sliders, the formula written with names and with the current numbers, the result and a curve. Recorded on 2026-09-30 with 0.1.4.
+
+![nk-explorer: an explorer page: three sliders, the formula with names and with current numbers, and a curve](https://raw.githubusercontent.com/NickkkLian/nickkk-skills/main/gallery/results/nk-explorer.png)
+
+## Try it
+
+Nothing is installed and nothing under `~/.claude` changes: clone, run the self-tests, run the example. It writes only `demo*` files inside the clone.
+
+```bash
+git clone https://github.com/NickkkLian/nk-explorer && cd nk-explorer
+python3 scripts/concept.py --selftest
+python3 scripts/explorer_check.py --selftest
+python3 scripts/formula.py --selftest
+python3 scripts/make_explorer.py --selftest
+python3 scripts/numsrc.py --selftest
+python3 scripts/probe_check.py --selftest
+python3 scripts/make_explorer.py assets/concepts/loan-payment.json -o demo-loan.html
+python3 scripts/explorer_check.py demo-loan.html
+```
+
+Each self-test ends on its own line:
+
+```text
+concept selftest: 22/22 passed
+explorer_check selftest: 105/105 passed
+formula selftest · 44/44 passed
+make_explorer selftest: 12/12 passed
+selftest: 50/50
+probe_check selftest: 47/47 passed
+```
+
+The example commands print this (recorded in a fresh copy; the self-test that opens Chrome ran with the normal home folder, everything else with an empty one; the path of the clone is taken out):
+
+```text
+$ python3 scripts/make_explorer.py assets/concepts/loan-payment.json -o demo-loan.html
+built demo-loan.html: M = L * (i/1200) / (1 - (1 + i/1200)^(-12*y))  ·  controls L, i, y  ·  2 practice question(s)  ·  99115 bytes
+next: python3 scripts/explorer_check.py demo-loan.html  and  python3 scripts/probe_check.py demo-loan.html
+$ python3 scripts/explorer_check.py demo-loan.html
+✔ demo-loan.html: 0 findings
+```
+
+Open `demo-loan.html` and move a slider: it is the page in the picture above. `python3 scripts/probe_check.py demo-loan.html` then opens it in Chrome and answers its practice questions (needs Chrome or Chromium).
+
+### What to type
+
+With the skill installed ([Install](#install)), ask in plain words. This is the request a recorded test run used; it never names the skill:
+
+> I teach a driving theory evening class. Make me one page my students can open on their laptops where they can move the car's speed, the driver's reaction time and how hard the car brakes, and see the stopping distance formula change as they do — with a couple of practice questions they can check themselves.
+
+![nk-explorer](https://raw.githubusercontent.com/NickkkLian/nickkk-skills/main/gallery/social/nk-explorer.png)
 
 Part of [nickkk-skills](https://github.com/NickkkLian/nickkk-skills) — agent skills that ship a self-test with every script; the Verify
 section below says which of them were broken on purpose before release to prove they react.
@@ -10,6 +59,15 @@ section below says which of them were broken on purpose before release to prove 
 ![nk-explorer demo: one idea in, a finished page out](https://raw.githubusercontent.com/NickkkLian/nickkk-skills/main/gallery/nk-explorer.gif)
 
 ## What it does
+
+- You write one formula and its controls as JSON (`assets/concepts/` has three to start from: compound interest, a loan's monthly payment, the chance of at least one success); `make_explorer.py` writes one HTML file.
+- Every slider is in the formula, and every move rewrites the formula line with the moved number marked, the result and the curve.
+- The formula shown is the formula computed: no eval, and the line with numbers works out to the result.
+- Practice questions are graded on the result, with a tolerance that no other answer a slider gives can pass.
+- `explorer_check.py` reads the finished file back against fourteen rules; `probe_check.py` opens it in Chrome, moves every slider, answers every question and recomputes what the page showed with a second implementation.
+- Standard library only (`probe_check.py` also needs Chrome). The page has no dependencies and loads nothing.
+
+<details><summary>What each script does, in full</summary>
 
 - Five invariants: every control is in the formula and every move shows (the formula line rewritten with the moved number marked, the result, the curve); the formula shown is the formula computed, with no eval, and the line with numbers works out to the result; a question is graded on the result, with a tolerance no other answer a slider gives can pass; a reach question asks for something the starting values do not already give; the page says what the formula leaves out, where it comes from, and that it is not advice.
 - `assets/starter.html`, a working explainer (how compound interest grows), and `assets/concepts/`, three concepts to start from: compound interest, a loan's monthly payment, and the chance of at least one success in a number of tries. The page is built from the concept block alone; `assets/design-tokens.css` is the token file it shares with the other pages in this family.
@@ -19,18 +77,20 @@ section below says which of them were broken on purpose before release to prove 
 - Standard library only (probe_check.py also needs Chrome). The page it writes has no dependencies and no build step.
 - Click the result or a readout to see the formula with the current numbers and what the formula leaves out (the shared number-sources layer, `numsrc.py`).
 
+</details>
+
 The full procedure, the boundaries and where the rules came from are in [SKILL.md](SKILL.md).
 
 ## How it works
 
-1. Pick one formula
-2. Write the concept
-3. Choose ranges a person would try
-4. Write the practice questions
-5. Build the page
-6. Check the file
-7. Run it
-8. Open it and move everything
+1. Pick one formula. The page explains one formula with one result — not a model, not a derivation.
+2. Write the concept as JSON.
+3. Choose ranges a person would try.
+4. Write the practice questions. A *compute* question sets every control and asks for the result.
+5. Build the page: `python3 scripts/make_explorer.py concept.json -o page.html`.
+6. Check the file: `python3 scripts/explorer_check.py page.html`.
+7. Run it: `python3 scripts/probe_check.py page.html` opens the page in Chrome with `?probe=1`.
+8. Open it and move everything — `references/acceptance.md` is the walk-through: what a person checks that no script can, such as whether the ranges make sense and whether the notes say what the formula really leaves out.
 
 ## Why it is built this way
 
@@ -103,6 +163,8 @@ git clone https://github.com/NickkkLian/nk-explorer.git ~/.agents/skills/nk-expl
 
 ## Compatibility
 
+<details><summary>Which agents it was run in, and what each run did</summary>
+
 | Agent | Tested | What was checked |
 |---|---|---|
 | Claude Code (CLI 2.1.173, macOS) | yes | In a fresh project with an isolated Claude config, inside a macOS sandbox that blocked reading the tester's ~/.claude folder (settings, session history, memory), Desktop, Documents and Downloads, SSH keys and git identity, a plain request that never names the skill triggered it and it ran its bundled script. The brief asked for one page for a driving-theory class where students move the speed, the reaction time and the braking and watch the stopping-distance formula change, with practice questions they can check themselves; it never named the skill. In nine turns the run read an example concept and the format reference, tried the formula with scripts/formula.py, wrote a concept of its own, built the page with no refusal, and ran scripts/explorer_check.py (0 findings) and scripts/probe_check.py, which could not start Chrome's own sandbox inside the test sandbox, ran again with --no-sandbox and said so: 7 of 7 checks passed. That was the version before the outside audit; its concept, built again with the version released after it, gives 0 findings and 7 of 7 as well. What no check catches: its second question says “double the speed to 40 m/s” after a first question at 30 m/s, the kind of wording a person reads for in references/acceptance.md. |
@@ -110,6 +172,8 @@ git clone https://github.com/NickkkLian/nk-explorer.git ~/.agents/skills/nk-expl
 | Cursor, Gemini CLI | no | Not tested. Their documentation says both read `~/.agents/skills`, the folder route 4 clones into; Gemini CLI asks before it activates a skill. |
 
 This skill's frontmatter uses only name, description, license, compatibility and metadata.
+
+</details>
 
 ## Verify
 
@@ -121,6 +185,8 @@ python3 scripts/make_explorer.py --selftest
 python3 scripts/numsrc.py --selftest
 python3 scripts/probe_check.py --selftest
 ```
+
+<details><summary>What was broken on purpose before release, script by script</summary>
 
 Python 3.9+, standard library only; probe_check.py also needs Google Chrome or Chromium.
 90 checks in explorer_check.py and concept.py were broken on purpose, one at a time, in a sandbox copy,
@@ -141,7 +207,11 @@ numsrc.py, the number-sources layer shared with four other skills: each of its 1
 finding was disabled in a sandbox copy, found by reading the source rather than listed by hand, and its self-test went
 red each time; the unmutated copy stayed green.
 
+</details>
+
 ## Limits
+
+<details><summary>What it does not do, in full</summary>
 
 - **One formula, one result, sliders only.** No systems of equations, no step-by-step derivations, no dropdowns or switches. Each control is a number on a grid of at most 2,000 steps, and a page has one to six of them.
 - **Formulas only, not code or queries.** A concept that is really a query over a table (GROUP BY, a join) is not this version's; a table-and-query kind is planned for 0.2.
@@ -151,6 +221,8 @@ red each time; the unmutated copy stayed green.
 - **The checks read the page as built, and the policy does not hold every edit.** Tested in Chrome, the page's policy stops an outside font, image or stylesheet, an @import and eval, and a script changed without its hash does not run. It does not stop: an edit that removes or loosens the policy line (explorer_check.py refuses that page, E09); anything placed before the policy line, which makes Chrome ignore the policy (E09 names such a page); a meta refresh (E09 names it); a script that navigates away (`location.assign`, `location =`, `window.open`), which explorer_check.py does not name; and a script whose hashes are written again after the edit, which then runs. Text can be changed to say anything. Run explorer_check.py and probe_check.py again after any edit, or build the page again.
 - **E10 covers the usual ways of writing markup, not all of them.** It names innerHTML, outerHTML, insertAdjacentHTML and the others it lists, written that way; `el["inner" + "HTML"] = …` or `setHTMLUnsafe(…)` added to a page with its hashes written again gets no finding.
 - **The checkers' own command lines are not break-tested.** The break matrices cover the lines that report a finding, not the lines that print the findings and set the exit code, nor explorer_check.py's line that passes on concept.py's findings. Changing explorer_check.py's exit code to 0 left every self-test green; a run then prints its findings but exits 0.
+
+</details>
 
 ## License
 
