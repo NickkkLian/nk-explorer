@@ -3,7 +3,7 @@ name: nk-explorer
 description: Turn one formula into a self-contained offline HTML explorer with the person's question, a headline answer with its unit, one principal slider and a curve, expandable formula working and other settings, and practice graded on the result. Use when lessons, posts or README examples need to show how a formula behaves by changing its inputs. Build from JSON with scripts/make_explorer.py, validate with scripts/explorer_check.py, and use scripts/probe_check.py for Chrome interaction checks. One formula and sliders only; no systems of equations or table queries.
 license: MIT
 metadata:
-  compatibility: "standard library only, no packages and no build step; the page it writes has no dependencies, evaluates its formula without eval, and carries a Content-Security-Policy intended to restrict resources to its own inline scripts and styles. The browser self-test checks an edited page with mismatched script hashes; broader policy enforcement was not separately audited. probe_check.py needs Google Chrome or Chromium; without one, open the page with ?probe=1 in any browser."
+  compatibility: "standard library only, no packages and no build step; the page it writes has no dependencies, evaluates its formula without eval, and carries a Content-Security-Policy intended to restrict resources to its own inline scripts and styles. The browser self-test checks an edited page with mismatched script hashes; broader policy enforcement was not separately audited. probe_check.py needs Google Chrome or Chromium; without one, the page is designed to show a manual report with ?probe=1 in a modern browser; that fallback and other browsers were not checked."
   provenance: own practice (2026-09) — the "show the query behind every click, grade on the result" idea from Query Mirror, a SQL teaching tool of mine, carried over to formulas; see Provenance
   version: 0.1.6
 ---
@@ -58,7 +58,7 @@ report the browser check as unrun, and independently check extracted page logic 
 
 - Someone asks how a formula behaves — interest, repayments, a probability, a physics or pricing formula — and a
   paragraph of explanation is not landing.
-- A lesson, a post or a README needs an example people can move, as one file that opens anywhere without a server.
+- A lesson, a post or a README needs an example people can move, in an HTML page designed to open locally in a modern browser without a server.
 - The same "what if the rate were higher / the loan shorter / the chance smaller" question keeps being asked.
 
 ## Procedure
@@ -115,7 +115,7 @@ report the browser check as unrun, and independently check extracted page logic 
    policy, the policy is the one make_explorer.py writes and still matches the page's scripts, and the usual ways a
    page asks for something from outside are named so they can be taken out (an outside address in an attribute or a
    style, a link to any file, srcset, @import, a meta refresh, fetch and the rest; a file next to the page, such as
-   src="px.png", is not named — the policy stops the browser loading it) · E10 text written as text, none of the
+   src="px.png", is not named — the policy is intended to prevent loading it, but that neighbouring-file case was not browser-tested) · E10 text written as text, none of the
    usual ways of writing markup from script (innerHTML and the others it lists), and not the name eval anywhere in
    the script · E11 colours from the tokens ·
    E12 no icon characters · E13 a footer that says what is left out, where the formula comes from, and that it is
@@ -128,8 +128,8 @@ report the browser check as unrun, and independently check extracted page logic 
    P3 compute answers pass written three ways and half a tolerance off, and fail two tolerances off or empty · P4
    reach questions pass and fail on the same settings as Python, lock their fixed controls, and one step past a
    lowest or highest answer fails, as does the first setting further on where a curve that turns back meets the
-   goal again. Axis labels, chart notes, slider end labels and verdict texts are not compared with Python. Without Chrome, or where Chrome cannot start (some agent sandboxes do not allow it, and the script says so
-   rather than blaming the page), open `page.html?probe=1` in any browser; its own summary is at the foot of the page.
+   goal again. Axis labels, chart notes, slider end labels and verdict texts are not compared with Python. Without a runnable Chrome, try `page.html?probe=1` in the intended modern browser; the design puts its own summary
+   at the foot of the page. This manual fallback and other browsers were not checked; it does not supply independent recomputation.
 8. **Open it and move everything** — `references/acceptance.md` is the walk-through: what a person checks that no
    script can, such as whether the ranges make sense and whether the notes say what the formula really leaves out.
 
@@ -154,7 +154,7 @@ warn about unused control entries because those readouts are inserted by the app
   differs from this skill's by one character is refused (E08).
 - **No eval.** The formula is parsed by a small language that knows only numbers, the page's own controls and a
   fixed list of functions. A name it does not know is an error, not a lookup, so the concept cannot reach anything
-  else on the page. The page's policy forbids eval in the browser as well, and lets no other script run.
+  else on the page. The page's policy is intended to disallow eval and scripts without matching hashes. The recorded Chrome self-test covers a mismatched-script-hash page; other policy cases were not separately audited.
 - **The line with numbers works out.** A number in the formula is written as it was typed, and a negative value in
   brackets (`1 × (-3)^2`, not `1 × -3^2`), so doing the sum on the substituted line gives the headline at its display
   precision. Python formula unit tests and Node probe comparisons cover the shipped fixtures; an exhaustive
@@ -200,9 +200,10 @@ warn about unused control entries because those readouts are inserted by the app
   to stop an outside font, image or stylesheet, an @import and eval, and scripts without matching hashes.
   File checks inspect the policy and hashes. The recorded Chrome self-test rejects an edited page with
   mismatched script hashes; broader policy enforcement was not separately audited. The policy does not cover: an edit that removes or loosens the policy line (explorer_check.py refuses that page,
-  E09); anything placed before the policy line, which makes Chrome ignore the policy (E09 names such a page); a meta
-  refresh (E09 names it); a script that navigates away (`location.assign`, `location =`, `window.open`), which
-  explorer_check.py does not name; and a script whose hashes are written again after the edit, which then runs.
+  E09); content placed before the policy line, which may execute or load before the policy takes effect (E09 names such a page);
+  a meta refresh (E09 names it); a script that navigates away (`location.assign`, `location =`, `window.open`), which
+  explorer_check.py does not name; and a script whose hashes are rewritten after editing, so it can be permitted
+  by the revised policy. These broader edited-page cases were not browser-tested.
   Text can be changed to say anything. Run explorer_check.py and probe_check.py again after any edit, or build the
   page again.
 - **E10 covers the usual ways of writing markup, not all of them.** It names innerHTML, outerHTML,

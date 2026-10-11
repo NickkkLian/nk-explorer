@@ -19,6 +19,11 @@ description explicitly states when to use the skill; compatibility wording is pr
 frontmatter validators.
 
 The browser recordings now include a 6/6 loan-page check and 47/47 self-tests on Python 3.13.9 and 3.9.6,
-with the earlier busy-machine 45/47 run disclosed. Keyboard/focus, phone-size appearance, other browsers,
+with one earlier 45/47 run and its unknown cause disclosed. Keyboard/focus, phone-size appearance, other browsers,
 Windows and Linux remain unchecked. The README and acceptance wording distinguish these tested cases from
 a broader browser audit.
+
+An outsider's README-first review found the result buried below specifications and browser promises broader
+than the evidence. This text-only fix names the teaching audience, shows the loan's checked numbers, generates
+before verifying, qualifies policy/compatibility claims, and separates original examples from reconstructions.
+Unchecked human acceptance remains explicit; warning order may vary. Scripts and assets are unchanged.

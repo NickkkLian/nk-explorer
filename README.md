@@ -1,16 +1,12 @@
 # nk-explorer
 
-Version **0.1.6**. Turn one formula into a self-contained HTML page intended to work offline.
-The page asks the person's question, gives an answer with its unit, and puts the principal controls beside the
-curve on wide screens. On narrow screens (760px or less), the curve follows the controls. Other settings expand
-inside the controls panel; formula working and its legend expand below the curve.
-Practice questions are graded on the numerical result.
+Version **0.1.6**. For teachers and writers using a coding agent to explain one formula with a calculator,
+one main slider and a graph. Generate an HTML page, then check it and inspect it in the browser you intend to use.
+The page is designed to open locally and work offline in a modern browser.
 
-The opening layout is designed for **1366 × 768 CSS pixels**, at 100% zoom, a 16px root font, and closed expandable
-sections: the answer and whole curve should fit without scrolling. The builder checked CSS placement and a
-conservative height estimate. A subsequent reviewer inspected the first screen at that viewport and ran the
-browser checker on five pages; the recorded browser results are described below. Those records do not establish
-mobile readability, keyboard/focus behaviour or first-impression appeal. Long headings or notes need inspection.
+**The loan example starts at £1169.18 per month.** Its comparison shows £1169.18 over 25 years versus £1045.02
+over 32 years with the other inputs unchanged. Generate [output/loan.html](output/loan.html) below to see the
+question, answer and curve, expandable calculation and settings, and practice questions graded on the result.
 
 ## Try it from a checkout
 
@@ -20,16 +16,21 @@ relative paths are relative to the working directory. Create the output and scra
 ```bash
 mkdir -p output scratch
 export TMPDIR="$PWD/scratch"
+python3 scripts/make_explorer.py assets/concepts/loan-payment.json -o output/loan.html
+```
+
+Then verify the generated file and the non-browser test fixtures:
+
+```bash
+python3 scripts/explorer_check.py output/loan.html
 python3 scripts/concept.py --selftest
 python3 scripts/explorer_check.py --selftest
 python3 scripts/formula.py --selftest
 python3 scripts/make_explorer.py --selftest
 python3 scripts/numsrc.py --selftest
-python3 scripts/make_explorer.py assets/concepts/loan-payment.json -o output/loan.html
-python3 scripts/explorer_check.py output/loan.html
 ```
 
-Open `output/loan.html`. Where Chrome/Chromium and permission to launch it are available, also run:
+Open `output/loan.html` and inspect it. Where Chrome/Chromium and permission to launch it are available, also run:
 
 ```bash
 python3 scripts/probe_check.py output/loan.html
@@ -78,6 +79,17 @@ curve and scale; a note gives the omitted count and visible bounds. The current 
 and an off-range dot is omitted and explained. The exact rule and its limits are in the format reference.
 Both axes identify the quantity and unit. The existing design tokens provide the colours and typography.
 
+## Layout target
+
+The design places controls beside the curve above 760px and the curve after the controls at narrower widths.
+Other settings expand inside the controls panel; formula working and its legend expand below the curve.
+
+The opening layout is designed for **1366 × 768 CSS pixels**, at 100% zoom, a 16px root font, and closed expandable
+sections: the answer and whole curve should fit without scrolling. The builder checked CSS placement and a
+conservative height estimate. A subsequent reviewer inspected the first screen at that viewport and ran the
+browser checker on five pages; the recorded browser results are described below. Those records do not establish
+mobile readability, keyboard/focus behaviour or first-impression appeal. Long headings or notes need inspection.
+
 ## What the checks establish
 
 `make_explorer.py` validates the concept before writing. `explorer_check.py` reads the finished page against
@@ -93,13 +105,18 @@ still requires recomputation outside the page.
 
 ## How this version was tried
 
-Two agents who did not build the skill each chose three requests. The first tried bill sharing, running time and
-kinetic energy: the report records correct numbers, missing units and a running-time chart flattened near zero
-speed; two pages felt like generic worksheets. The second tried royalties, tank filling and a lens: the report
-records correct numbers but found the curve below the controls despite the README saying it was beside them,
-and weak appeal in two examples. The build adds units and formatting, disclosed chart limits, controls beside
-the curve on wide screens, and live comparisons. The three later comparison pages are representative
-reconstructions; they are not the original second agent's pages.
+The supplied reports describe two agents who did not build the skill, each choosing three requests. The first
+tried bill sharing, running time and kinetic energy: its report records correct numbers, missing units and a
+running-time chart flattened near zero speed; two pages felt like generic worksheets. The second tried
+royalties, tank filling and a lens: its report records correct numbers but found the curve below the controls
+despite the README saying it was beside them, and weak appeal in two examples. The build adds units and
+formatting, disclosed chart limits, controls beside the curve on wide screens, and live comparisons.
+
+The five retained original examples (bill sharing, running time, kinetic energy, population growth and
+probability) were rebuilt at 0.1.6 for the browser checks below. The later royalty, tank and lens comparison
+pages are representative reconstructions; the original second agent's pages were not supplied. The trial
+reports and these pages remain integration evidence, not artifacts bundled in this checkout; the historical
+trial findings are reported results, not a fresh independent reproduction of the original trials.
 
 A reviewer ran the skill's browser checker in headless Chrome on bill sharing, running time, kinetic energy,
 population growth and probability: the supplied reports total 25/25 checks passed. The first screen was also
@@ -108,11 +125,11 @@ inspected at 1366 × 768.
 The current loan page then passed 6/6 browser checks, and the browser self-test passed 47/47 on Python 3.13.9
 and 47/47 on Python 3.9.6, all with exit 0. These runs used macOS 15.7.3 and Google Chrome 156 beta on the
 current tree and the fresh lab copy; their printed outputs are recorded below. One earlier run of the same
-self-test, while the machine was busy with other jobs, passed 45/47. The two repeat runs passed 47/47; the
-cause of the earlier two failures was not established. This is evidence for the recorded runs, not a guarantee
-of repeatability under every load.
+self-test passed 45/47; two repeat runs passed 47/47. The cause of the earlier failures was not established.
+These are recorded results for those runs, not a guarantee of repeatability.
 
-All five non-browser self-tests and the generated loan page's file check pass locally. Keyboard and focus,
+All five non-browser self-tests and the generated loan page's file check pass locally. These fixture results
+and recorded browser checks do not complete human acceptance or establish release readiness. Keyboard and focus,
 phone-size appearance, other browsers, Windows and Linux remain unchecked. Source-panel interaction,
 appearance persistence, cache behaviour and a separate audit of temporary-profile cleanup were not checked.
 The browser self-test checks an edited page whose script hashes no longer match its policy; broader policy
@@ -517,12 +534,13 @@ probe_check selftest: 47/47 passed
 `python3 scripts/numsrc.py check output/loan.html` (exit 0):
 
 ```text
-N05 warning: control.y: source is unused
 N05 warning: control.i: source is unused
 N05 warning: control.L: source is unused
+N05 warning: control.y: source is unused
 ```
 
 The source-markup check warns that the three control entries are unused; this does not verify clicking their readouts.
+The unused-source warnings have no fixed order, so the same warnings can print in a different sequence.
 
 </details>
 
