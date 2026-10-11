@@ -4,6 +4,8 @@ Version **0.1.6**. For teachers and writers using a coding agent to explain one 
 one main slider and a graph. Generate an HTML page, then check it and inspect it in the browser you intend to use.
 The page is designed to open locally and work offline in a modern browser.
 
+![nk-explorer: a page made from one sentence: the question, the answer with its unit, one slider beside the curve](https://raw.githubusercontent.com/NickkkLian/nickkk-skills/main/gallery/results/nk-explorer.png)
+
 **The loan example starts at £1169.18 per month.** Its comparison shows £1169.18 over 25 years versus £1045.02
 over 32 years with the other inputs unchanged. Generate [output/loan.html](output/loan.html) below to see the
 question, answer and curve, expandable calculation and settings, and practice questions graded on the result.
@@ -52,6 +54,8 @@ directory; leave it unset for an uncached check after edits. Chrome may have its
 Ask an agent to use this skill with a request such as:
 
 > Let me change a restaurant bill, tip percentage, and number of friends to see how much each person pays.
+
+![nk-explorer](https://raw.githubusercontent.com/NickkkLian/nickkk-skills/main/gallery/social/nk-explorer.png)
 
 The procedure is in [SKILL.md](SKILL.md), the JSON fields in
 [references/concept-format.md](references/concept-format.md), and the human walkthrough in
