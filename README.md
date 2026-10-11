@@ -1,229 +1,544 @@
 # nk-explorer
 
-A [Claude Code](https://code.claude.com) skill. Turn a concept that can be written as one formula into one self-contained HTML page: every slider shows the formula it changes, and the page grades its own practice questions.
+Version **0.1.6**. Turn one formula into a self-contained HTML page intended to work offline.
+The page asks the person's question, gives an answer with its unit, and puts the principal controls beside the
+curve on wide screens. On narrow screens (760px or less), the curve follows the controls. Other settings expand
+inside the controls panel; formula working and its legend expand below the curve.
+Practice questions are graded on the numerical result.
 
-**What you get.** The page `make_explorer.py` builds from the bundled loan-payment concept: three sliders, the formula written with names and with the current numbers, the result and a curve. Recorded on 2026-09-30 with 0.1.4.
+The opening layout is designed for **1366 × 768 CSS pixels**, at 100% zoom, a 16px root font, and closed expandable
+sections: the answer and whole curve should fit without scrolling. The builder checked CSS placement and a
+conservative height estimate. A subsequent reviewer inspected the first screen at that viewport and ran the
+browser checker on five pages; the recorded browser results are described below. Those records do not establish
+mobile readability, keyboard/focus behaviour or first-impression appeal. Long headings or notes need inspection.
 
-![nk-explorer: an explorer page: three sliders, the formula with names and with current numbers, and a curve](https://raw.githubusercontent.com/NickkkLian/nickkk-skills/main/gallery/results/nk-explorer.png)
+## Try it from a checkout
 
-## Try it
-
-Nothing is installed and nothing under `~/.claude` changes: clone, run the self-tests, run the example. It writes only `demo*` files inside the clone.
+No packages or build step are required. Run from the skill folder. The builder overwrites the named output file;
+relative paths are relative to the working directory. Create the output and scratch folders first:
 
 ```bash
-git clone https://github.com/NickkkLian/nk-explorer && cd nk-explorer
+mkdir -p output scratch
+export TMPDIR="$PWD/scratch"
 python3 scripts/concept.py --selftest
 python3 scripts/explorer_check.py --selftest
 python3 scripts/formula.py --selftest
 python3 scripts/make_explorer.py --selftest
 python3 scripts/numsrc.py --selftest
-python3 scripts/probe_check.py --selftest
-python3 scripts/make_explorer.py assets/concepts/loan-payment.json -o demo-loan.html
-python3 scripts/explorer_check.py demo-loan.html
+python3 scripts/make_explorer.py assets/concepts/loan-payment.json -o output/loan.html
+python3 scripts/explorer_check.py output/loan.html
 ```
 
-Each self-test ends on its own line:
+Open `output/loan.html`. Where Chrome/Chromium and permission to launch it are available, also run:
+
+```bash
+python3 scripts/probe_check.py output/loan.html
+python3 scripts/probe_check.py --selftest
+```
+
+These commands do not install the skill or edit agent configuration. They write the requested HTML, and self-tests
+and the browser probe create temporary files. Python uses `TMPDIR` when set, otherwise its system temporary
+directory. The browser probe creates an `explorer-probe-…` profile there and removes it in `finally`; its self-test
+also creates temporary pages and fake browser executables. Builder self-tests create temporary concept/HTML files.
+An interruption can leave temporary files. If `PROBE_CACHE` is set, the probe also keeps JSON reports in that
+directory; leave it unset for an uncached check after edits. Chrome may have its own platform side effects.
+`formula.py`, `concept.py` and `explorer_check.py` print results/findings without output files.
+`python3 scripts/numsrc.py check output/loan.html` checks number-source markup without writing output files.
+`python3 scripts/make_explorer.py --concept-of output/loan.html` prints the embedded JSON without writing a file.
+
+## Make a page for a request
+
+Ask an agent to use this skill with a request such as:
+
+> Let me change a restaurant bill, tip percentage, and number of friends to see how much each person pays.
+
+The procedure is in [SKILL.md](SKILL.md), the JSON fields in
+[references/concept-format.md](references/concept-format.md), and the human walkthrough in
+[references/acceptance.md](references/acceptance.md).
+
+Write one formula and one to six sliders. Carry the request's units into the controls and result, and put unit
+conversions in the formula. A percent result must be computed on a 0–100 scale; adding `%` does not convert a ratio.
+Currency results default to two decimal places; physical quantities, percentages and dimensionless results use
+the ordinary six-significant-digit formatter (whole numbers below 10^15 stay plain). Optional `result.decimals`
+sets 0–8 fixed decimal places. Slider readouts retain their exact formatting. Grading uses the full result,
+so choose a practice tolerance consistent with the precision asked for.
+
+Write `question` as a short question in the person's words and choose `chart.x` as the slider worth trying first.
+Open on an ordinary case. Optional `result.unavailable` explains an invalid setting and what to change, such as
+zero speed on a running-time page. Otherwise the page explains the arithmetic error.
+
+Give the first screen a reason to inspect the curve: `chart.comparison` can select two distinct slider positions
+with `from` and `to`. Both must be on the slider grid and give finite answers at the opening settings. Pick a
+relevant pair, or a threshold the person actually asked about. Without this field, the page chooses the opening
+position and another about one fifth of the range away. The results update with the other settings and disclose
+undefined endpoints. A linear formula can still show what another hundred sales earns; no curvature is invented.
+
+The chart samples 201 points. Undefined samples break the curve. A sparse extreme tail can be omitted from the
+curve and scale; a note gives the omitted count and visible bounds. The current answer remains in the headline,
+and an off-range dot is omitted and explained. The exact rule and its limits are in the format reference.
+Both axes identify the quantity and unit. The existing design tokens provide the colours and typography.
+
+## What the checks establish
+
+`make_explorer.py` validates the concept before writing. `explorer_check.py` reads the finished page against
+fourteen rules: concept validity, the shipped formula language, policy and script hashes, listed outside-resource
+and markup-writing patterns, token colours, icon characters, footer disclosures and probe wiring.
+The page carries its own formula parser, without `eval`, and a Content-Security-Policy naming its scripts by hash.
+Click the result or a slider readout to inspect its number source.
+
+`probe_check.py` launches Chrome with `?probe=1`, works the page's sliders and practice buttons, and compares the
+recorded formula lines, headline formatting, readouts and grading against Python. Without a runnable browser,
+report this check as unrun. Opening `page.html?probe=1` manually shows the page's own report; independent checking
+still requires recomputation outside the page.
+
+## How this version was tried
+
+Two agents who did not build the skill each chose three requests. The first tried bill sharing, running time and
+kinetic energy: the report records correct numbers, missing units and a running-time chart flattened near zero
+speed; two pages felt like generic worksheets. The second tried royalties, tank filling and a lens: the report
+records correct numbers but found the curve below the controls despite the README saying it was beside them,
+and weak appeal in two examples. The build adds units and formatting, disclosed chart limits, controls beside
+the curve on wide screens, and live comparisons. The three later comparison pages are representative
+reconstructions; they are not the original second agent's pages.
+
+A reviewer ran the skill's browser checker in headless Chrome on bill sharing, running time, kinetic energy,
+population growth and probability: the supplied reports total 25/25 checks passed. The first screen was also
+inspected at 1366 × 768.
+
+The current loan page then passed 6/6 browser checks, and the browser self-test passed 47/47 on Python 3.13.9
+and 47/47 on Python 3.9.6, all with exit 0. These runs used macOS 15.7.3 and Google Chrome 156 beta on the
+current tree and the fresh lab copy; their printed outputs are recorded below. One earlier run of the same
+self-test, while the machine was busy with other jobs, passed 45/47. The two repeat runs passed 47/47; the
+cause of the earlier two failures was not established. This is evidence for the recorded runs, not a guarantee
+of repeatability under every load.
+
+All five non-browser self-tests and the generated loan page's file check pass locally. Keyboard and focus,
+phone-size appearance, other browsers, Windows and Linux remain unchecked. Source-panel interaction,
+appearance persistence, cache behaviour and a separate audit of temporary-profile cleanup were not checked.
+The browser self-test checks an edited page whose script hashes no longer match its policy; broader policy
+enforcement was not separately audited. Shared number-source files were compared during integration.
+
+<details><summary>Command output recorded on 2026-10-11</summary>
+
+The setup commands print nothing. Non-browser blocks retain the complete local command output. The two
+browser blocks reproduce the reviewer’s recordings as printed, including their command and exit markers.
+
+`mkdir -p output scratch` (exit 0):
 
 ```text
-concept selftest: 22/22 passed
+```
+
+`export TMPDIR="$PWD/scratch"` (exit 0):
+
+```text
+```
+
+`python3 scripts/concept.py --selftest` (exit 0):
+
+```text
+  PASS  a slider's third tenth is 0.3, not 0.30000000000000004
+  PASS  positions: ten steps, 0.7 on the grid, 0.75 and 1.1 off it
+  PASS  halves round up, as Math.round does (2.5 -> 3, -2.5 -> -2)
+  PASS  a unit's singular is used for exactly 1 and -1
+  PASS  a currency sign goes in front (after a minus), % sticks to the number, no unit is just the number
+  PASS  money with one decimal gets a second; two or more decimals are left as they are
+  PASS  currency headlines carry two fixed decimals without changing slider readouts
+  PASS  physical units, percent and dimensionless headline defaults
+  PASS  explicit precision and singular units are respected
+  PASS  fixed decimals round the computed binary value, remove negative rounded zero and handle huge magnitudes
+  PASS  domain errors have a helpful default and a concept-specific override
+  PASS  goals: within is inclusive at both ends, at most and at least include the target
+  PASS  invalid headline precisions are refused by the concept schema
+  PASS  a finite comparison between two chart slider positions is accepted
+  PASS  duplicate, off-grid, out-of-range and malformed comparison endpoints are refused
+  PASS  the reach walk finds the first pass at n = 11 and the first fail at n = 0 (got {'P': 1000, 'r': 7, 'n': 11.0}, {'P': 1000, 'r': 7, 'n': 0.0})
+  PASS  lowest: 11 years passes, 12 does not (it reaches the goal, but so does 11)
+  PASS  without lowest, 12 years passes too
+  PASS  lowest looks at every lower position: a ball thrown up at 20 m/s is within 1 m of 15 m at 3 s, but the lowest is 0.9 s
+  PASS  a 5 that is written as years does not state a 5% rate
+  PASS  each value paired with its own number: £2,000, 5%, 5 years
+  PASS  name = value ties a number to its name, and a minus is read (x = -2)
+  PASS  a unit word no control uses (metres) does not stop a number standing for its value
+  PASS  a number that only says how to answer (2 decimal places, the nearest 10, 3 significant figures) stands for no value
+  PASS  a number that only says how to answer or which question it is stands for no value, in 15 forms of the class
+  PASS  and a number that is a value is still read as one: 'within 2 of 10', 'in 5 tries', a label and a precision beside the values
+  PASS  the example at-least-one-success.json meets every concept rule
+  PASS  the example compound-interest.json meets every concept rule
+  PASS  the example loan-payment.json meets every concept rule
+  PASS  a zero tolerance is refused with E06 (the rest of the rules are tested page by page in explorer_check.py)
+concept selftest: 30/30 passed
+```
+
+`python3 scripts/explorer_check.py --selftest` (exit 0):
+
+```text
+  ✔ clean → want ['clean'], got ['clean']
+  ✔ E01 no concept block → want ['E01'], got ['E01']
+  ✔ E01 a concept that is a list, not an object → want ['E01'], got ['E01']
+  ✔ E01 a control that is not an object → want ['E01'], got ['E01']
+  ✔ E01 a label left empty → want ['E01'], got ['E01']
+  ✔ E01 notes written as an object, not a list → want ['E01'], got ['E01']
+  ✔ E01 a question of a type the page does not know → want ['E01'], got ['E01']
+  ✔ E01 a question value written as text → want ['E01'], got ['E01']
+  ✔ E01 a question value that is true → want ['E01'], got ['E01']
+  ✔ E04 a step below zero, on a control the formula does not use → want ['E04'], got ['E04']
+  ✔ E01 a misspelt field → want ['E01'], got ['E01']
+  ✔ E01 a field the skill does not know → want ['E01'], got ['E01']
+  ✔ E01 a required field left out → want ['E01'], got ['E01']
+  ✔ E01 a number written as text → want ['E01'], got ['E01']
+  ✔ E01 true where a number goes → want ['E01'], got ['E01']
+  ✔ E01 a key written twice → want ['E01'], got ['E01']
+  ✔ E01 a title longer than 90 characters → want ['E01'], got ['E01']
+  ✔ E01 no notes → want ['E01'], got ['E01']
+  ✔ E01 no practice questions → want ['E01'], got ['E01']
+  ✔ E01 seven controls → want ['E01'], got ['E01']
+  ✔ E02 a name that is not a control → want ['E02'], got ['E02']
+  ✔ E02 a formula that does not parse → want ['E02'], got ['E02']
+  ✔ E02 the result named like a control → want ['E02'], got ['E02']
+  ✔ E02 the result named like a function → want ['E02'], got ['E02']
+  ✔ E04 a starting value between positions → want ['E04'], got ['E04']
+  ✔ E04 a step that does not divide the range → want ['E04'], got ['E04']
+  ✔ E04 positions that need more than six digits → want ['E04'], got ['E04']
+  ✔ E04 a control named __proto__ → want ['E04'], got ['E04']
+  ✔ E04 two controls with one name → want ['E04'], got ['E04']
+  ✔ E04 a control named like a function → want ['E04'], got ['E04']
+  ✔ E04 a slider with more than 2000 steps → want ['E04'], got ['E04']
+  ✔ E04 a slider with no range → want ['E04'], got ['E04']
+  ✔ E03 a control the formula never uses → want ['E03'], got ['E03']
+  ✔ E03 a control that never changes the result → want ['E03'], got ['E03']
+  ✔ E05 no value at the starting values → want ['E05'], got ['E05']
+  ✔ E05 the chart runs along something that is not a control → want ['E05'], got ['E05']
+  ✔ E05 a chart with no curve to draw → want ['E05'], got ['E05']
+  ✔ E06 a question that leaves a control out → want ['E06'], got ['E06']
+  ✔ E06 a question value between positions → want ['E06'], got ['E06']
+  ✔ E06 a question that never says a value it uses → want ['E06'], got ['E06']
+  ✔ E06 a value the prompt gives to another control → want ['E06'], got ['E06']
+  ✔ E06 a number that only says how to round, standing in for a value → want ['E06'], got ['E06']
+  ✔ E06 a question label's number standing in for a value → want ['E06'], got ['E06']
+  ✔ E06 the M of a question label's N of M standing in for a value → want ['E06'], got ['E06']
+  ✔ E06 a precision's number standing in for a value → want ['E06'], got ['E06']
+  ✔ E06 a bracketed count standing in for a value → want ['E06'], got ['E06']
+  ✔ clean: a negative value stated as x = -2 → want ['clean'], got ['clean']
+  ✔ E06 a question the formula has no answer for → want ['E06'], got ['E06']
+  ✔ E06 a tolerance of zero → want ['E06'], got ['E06']
+  ✔ E06 a tolerance that also passes a neighbour → want ['E06'], got ['E06']
+  ✔ clean: a step function with a tight tolerance → want ['clean'], got ['clean']
+  ✔ E06 a tolerance a step function hides → want ['E06'], got ['E06']
+  ✔ E06 a tolerance a far position passes, on a curve that turns back → want ['E06'], got ['E06']
+  ✔ E07 fixes something that is not a control → want ['E07'], got ['E07']
+  ✔ E07 a fixed value between positions → want ['E07'], got ['E07']
+  ✔ E07 three controls left free → want ['E07'], got ['E07']
+  ✔ E07 a goal the page does not know → want ['E07'], got ['E07']
+  ✔ E07 a within goal with no tolerance → want ['E07'], got ['E07']
+  ✔ E07 a tolerance on an at-least goal → want ['E07'], got ['E07']
+  ✔ E07 lowest and highest together → want ['E07'], got ['E07']
+  ✔ E07 lowest names a fixed control → want ['E07'], got ['E07']
+  ✔ E07 more settings than the checker walks → want ['E07'], got ['E07']
+  ✔ E07 a question that never says its target → want ['E07'], got ['E07']
+  ✔ E07 a within goal whose prompt gives another tolerance → want ['E07'], got ['E07']
+  ✔ E07 a goal the starting values already pass → want ['E07'], got ['E07']
+  ✔ E07 a goal no setting reaches → want ['E07'], got ['E07']
+  ✔ E08 a changed formula language → want ['E08'], got ['E08']
+  ✔ E08 the language's markers removed → want ['E08'], got ['E08']
+  ✔ E09 the tokens linked, not written in → want ['E09'], got ['E09']
+  ✔ E09 no Content-Security-Policy → want ['E09'], got ['E09']
+  ✔ E09 a policy that lets images in from anywhere → want ['E09'], got ['E09']
+  ✔ E09 a script changed after the page was sealed → want ['E09'], got ['E09']
+  ✔ E09 a meta refresh → want ['E09'], got ['E09']
+  ✔ E09 an @import in the styles → want ['E09'], got ['E09']
+  ✔ E09 an image list from an outside address → want ['E09'], got ['E09']
+  ✔ E09 a Google Fonts stylesheet → want ['E09'], got ['E09']
+  ✔ E09 a script from a file → want ['E09'], got ['E09']
+  ✔ E09 an image from an outside address → want ['E09'], got ['E09']
+  ✔ E09 an outside address in the styles → want ['E09'], got ['E09']
+  ✔ E09 a fetch → want ['E09'], got ['E09']
+  ✔ E10 markup written into the page → want ['E10'], got ['E10']
+  ✔ E10 eval → want ['E10'], got ['E10']
+  ✔ E10 eval called indirectly → want ['E10'], got ['E10']
+  ✔ E10 eval reached through a dot → want ['E10'], got ['E10']
+  ✔ E10 a javascript: link → want ['E10'], got ['E10']
+  ✔ clean: a question that says 'only =' → want ['clean'], got ['clean']
+  ✔ E10 an inline event handler → want ['E10'], got ['E10']
+  ✔ E11 a raw colour in the page's styles → want ['E11'], got ['E11']
+  ✔ E11 a colour in an inline style → want ['E11'], got ['E11']
+  ✔ E11 a colour in an SVG attribute → want ['E11'], got ['E11']
+  ✔ E11 a named colour in the page's styles → want ['E11'], got ['E11']
+  ✔ E11 a colour set from the script → want ['E11'], got ['E11']
+  ✔ E11 a colour inside an image written into the styles → want ['E11'], got ['E11']
+  ✔ E12 an icon character in the page → want ['E12'], got ['E12']
+  ✔ E12 an icon written as an escape in the concept → want ['E12'], got ['E12']
+  ✔ E12 an emoji punctuation mark → want ['E12'], got ['E12']
+  ✔ clean: arrows and a copyright sign in a note → want ['clean'], got ['clean']
+  ✔ E13 no footer → want ['E13'], got ['E13']
+  ✔ E13 the not-advice line removed → want ['E13'], got ['E13']
+  ✔ E13 the notes never written → want ['E13'], got ['E13']
+  ✔ E14 a page that does not read its concept block → want ['E14'], got ['E14']
+  ✔ E14 no probe battery → want ['E14'], got ['E14']
+  ✔ E14 a title that is not the concept's → want ['E14'], got ['E14']
+  ✔ E14 two titles → want ['E14'], got ['E14']
+  ✔ E14 no language on the page → want ['E14'], got ['E14']
 explorer_check selftest: 105/105 passed
-formula selftest · 44/44 passed
-make_explorer selftest: 12/12 passed
-selftest: 50/50
-probe_check selftest: 47/47 passed
 ```
 
-The example commands print this (recorded in a fresh copy; the self-test that opens Chrome ran with the normal home folder, everything else with an empty one; the path of the clone is taken out):
+`python3 scripts/formula.py --selftest` (exit 0):
 
 ```text
-$ python3 scripts/make_explorer.py assets/concepts/loan-payment.json -o demo-loan.html
-built demo-loan.html: M = L * (i/1200) / (1 - (1 + i/1200)^(-12*y))  ·  controls L, i, y  ·  2 practice question(s)  ·  99115 bytes
-next: python3 scripts/explorer_check.py demo-loan.html  and  python3 scripts/probe_check.py demo-loan.html
-$ python3 scripts/explorer_check.py demo-loan.html
-✔ demo-loan.html: 0 findings
+formula selftest · 44/44 passed
+  ✔ compound interest: 1000 at 5% for 10 years
+  ✔ power runs right to left: 2^3^2 = 2^9
+  ✔ -x^2 is -(x^2); (-x)^2 is not
+  ✔ - and / run left to right
+  ✔ * before +, and parentheses change it
+  ✔ a negative exponent needs no parentheses
+  ✔ min and max take two or more arguments
+  ✔ round is half away from zero (2.5 → 3, -2.5 → -3)
+  ✔ round works on the number as written, checked against answers worked out by hand
+  ✔ round, floor and ceil finish the working in decimal first, checked against answers worked out by hand
+  ✔ e-notation and a leading decimal point
+  ✔ ** is accepted as ^
+  ✔ error: 1 / 0 → division by zero
+  ✔ error: sqrt(-1) → square root of a negative
+  ✔ error: ln(0) → not positive
+  ✔ error: (-8)^(1/3) → fractional power
+  ✔ error: 0^-1 → zero to a negative power
+  ✔ error: q + 1 → not a control
+  ✔ error: 10^400 → not a finite number
+  ✔ error: exp(1000) → not a finite number
+  ✔ refused or harmless: 'alert(1)'
+  ✔ refused or harmless: 'constructor'
+  ✔ refused or harmless: '__proto__'
+  ✔ refused or harmless: 'x.y'
+  ✔ refused or harmless: 'a = 1'
+  ✔ refused or harmless: "'text'"
+  ✔ refused or harmless: 'sqrt 4'
+  ✔ refused or harmless: 'max(1)'
+  ✔ refused or harmless: 'abs(1, 2)'
+  ✔ refused or harmless: '1 +'
+  ✔ refused or harmless: '(1'
+  ✔ refused or harmless: '1 2'
+  ✔ the names a formula reads, in order
+  ✔ written back symbolically (P × (1 + r ÷ 100)^n)
+  ✔ written back with the values in place
+  ✔ a negative value is written in brackets, so the line works out to the result (1 × (-3)^2 + 2 × (-3) + 0 = 3)
+  ✔ a number in the formula is written as it was typed, not to six digits (1000 × 1.000137^(365 × 10))
+  ✔ numbers keep their own spelling (1.5e3, .5); ** is written as ^
+  ✔ no value when a step of the working is not finite, even if the end would be: 1 / exp(x) at {'x': 1000}
+  ✔ no value when a step of the working is not finite, even if the end would be: min(exp(x), 5) at {'x': 1000}
+  ✔ no value when a step of the working is not finite, even if the end would be: 1 / 10^x at {'x': 400}
+  ✔ no value when a step of the working is not finite, even if the end would be: min(5, x * x - x * x) at {'x': 1e+200}
+  ✔ a number too large to be finite is refused where it is written
+  ✔ numbers shown as the page shows them
 ```
 
-Open `demo-loan.html` and move a slider: it is the page in the picture above. `python3 scripts/probe_check.py demo-loan.html` then opens it in Chrome and answers its practice questions (needs Chrome or Chromium).
+`python3 scripts/make_explorer.py --selftest` (exit 0):
 
-### What to type
-
-With the skill installed ([Install](#install)), ask in plain words. This is the request a recorded test run used; it never names the skill:
-
-> I teach a driving theory evening class. Make me one page my students can open on their laptops where they can move the car's speed, the driver's reaction time and how hard the car brakes, and see the stopping distance formula change as they do — with a couple of practice questions they can check themselves.
-
-![nk-explorer](https://raw.githubusercontent.com/NickkkLian/nickkk-skills/main/gallery/social/nk-explorer.png)
-
-Part of [nickkk-skills](https://github.com/NickkkLian/nickkk-skills) — agent skills that ship a self-test with every script; the Verify
-section below says which of them were broken on purpose before release to prove they react.
-
-![nk-explorer demo: one idea in, a finished page out](https://raw.githubusercontent.com/NickkkLian/nickkk-skills/main/gallery/nk-explorer.gif)
-
-## What it does
-
-- You write one formula and its controls as JSON (`assets/concepts/` has three to start from: compound interest, a loan's monthly payment, the chance of at least one success); `make_explorer.py` writes one HTML file.
-- Every slider is in the formula, and every move rewrites the formula line with the moved number marked, the result and the curve.
-- The formula shown is the formula computed: no eval, and the line with numbers works out to the result.
-- Practice questions are graded on the result, with a tolerance that no other answer a slider gives can pass.
-- `explorer_check.py` reads the finished file back against fourteen rules; `probe_check.py` opens it in Chrome, moves every slider, answers every question and recomputes what the page showed with a second implementation.
-- Standard library only (`probe_check.py` also needs Chrome). The page has no dependencies and loads nothing.
-
-<details><summary>What each script does, in full</summary>
-
-- Five invariants: every control is in the formula and every move shows (the formula line rewritten with the moved number marked, the result, the curve); the formula shown is the formula computed, with no eval, and the line with numbers works out to the result; a question is graded on the result, with a tolerance no other answer a slider gives can pass; a reach question asks for something the starting values do not already give; the page says what the formula leaves out, where it comes from, and that it is not advice.
-- `assets/starter.html`, a working explainer (how compound interest grows), and `assets/concepts/`, three concepts to start from: compound interest, a loan's monthly payment, and the chance of at least one success in a number of tries. The page is built from the concept block alone; `assets/design-tokens.css` is the token file it shares with the other pages in this family.
-- `scripts/make_explorer.py`: a concept JSON becomes one file, tokens written in, sealed with a Content-Security-Policy that names the page's own scripts by their SHA-256 — the browser runs those and nothing else, loads nothing from any file or address, and runs no string as code. Before it writes, it refuses a concept that breaks one of seven rules — a control the formula never uses or that never changes the result, a slider whose starting value is between its positions, a page that would open on an error, a question that leaves a control unset or does not state each value it uses (a 5 written as years does not state a 5% rate), a tolerance another answer would pass, a reach question nothing passes or that the starting values already pass.
-- `scripts/explorer_check.py`: fourteen rules on the finished file — the seven again, read back out of the page, then the formula language unchanged, the page's policy in place and still matching its scripts (and the usual ways a page asks for something from outside named, so they can be taken out), text written as text with no eval, colours from the tokens, no icon characters, a footer that says what is left out, and the page wired to its concept.
-- `scripts/probe_check.py`: opens the page in Chrome with `?probe=1`. The page moves every slider and answers every question through its own buttons; the script recomputes what it recorded — the formula line, the result and every readout at each state it records, and every grading — with `scripts/formula.py`, a second, Python implementation of the page's formula language, and `scripts/concept.py`, the concept rules. Without Chrome, open `page.html?probe=1` yourself; the page's own summary is at the foot.
-- Standard library only (probe_check.py also needs Chrome). The page it writes has no dependencies and no build step.
-- Click the result or a readout to see the formula with the current numbers and what the formula leaves out (the shared number-sources layer, `numsrc.py`).
-
-</details>
-
-The full procedure, the boundaries and where the rules came from are in [SKILL.md](SKILL.md).
-
-## How it works
-
-1. Pick one formula. The page explains one formula with one result — not a model, not a derivation.
-2. Write the concept as JSON.
-3. Choose ranges a person would try.
-4. Write the practice questions. A *compute* question sets every control and asks for the result.
-5. Build the page: `python3 scripts/make_explorer.py concept.json -o page.html`.
-6. Check the file: `python3 scripts/explorer_check.py page.html`.
-7. Run it: `python3 scripts/probe_check.py page.html` opens the page in Chrome with `?probe=1`.
-8. Open it and move everything — `references/acceptance.md` is the walk-through: what a person checks that no script can, such as whether the ranges make sense and whether the notes say what the formula really leaves out.
-
-## Why it is built this way
-
-**The idea.** A formula is easier to believe once you have moved it. Every line is written from the formula the page computes with, so what you read is what it calculated.
-
-**Where it came from.** The two ideas at the centre come from [Query Mirror](https://github.com/NickkkLian/SQL-Viz-for-Edu), a SQL teaching tool of mine: every click on the table becomes the SQL behind it, and practice is graded on the result set rather than on how the query was written. This skill carries both over to formulas and none of the code.
-
-**Evidence.** What was broken on purpose to show that the self-tests can fail is under [Verify](#verify); what was run end to end, and in which agent, is under [Compatibility](#compatibility).
-
-## Install
-
-Pick one of four ways: three for Claude Code, one for OpenAI Codex. Skills load when a session starts, so open a **new** session after installing.
-
-### 1 · Terminal, one command
-
-```bash
-git clone https://github.com/NickkkLian/nk-explorer ~/.claude/skills/nk-explorer
+```text
+  PASS  the starter's own concept meets every concept rule
+  PASS  the page built from it has no findings in explorer_check.py
+  PASS  the tokens are written into the page, not linked
+  PASS  the page is sealed: its policy, ahead of every script, allows exactly its four scripts by hash (the three of the template and the number-sources runtime) and no eval
+  PASS  the concept read back out of the built page is the concept that went in
+  PASS  the example at-least-one-success.json builds with no findings
+  PASS  the example compound-interest.json builds with no findings
+  PASS  the example loan-payment.json builds with no findings
+  PASS  a note containing </script> and markup survives the trip into the page and back
+  PASS  a concept with a control the formula never uses is refused and nothing is written
+  PASS  a template whose formula language was edited is refused
+  PASS  a concept with a key written twice is refused
+make_explorer selftest: 12/12 passed
 ```
 
-1. Run the command above (for one project only, clone into `.claude/skills/nk-explorer` inside that project).
-2. Start a new Claude Code session.
-3. Check it loaded: type `/nk-explorer` — it appears in the slash-command menu. Or just ask for the task; the skill triggers on its own.
+`python3 scripts/numsrc.py --selftest` (exit 0):
 
-### 2 · Claude Code in a terminal session (plugin)
-
-The plugin route goes through the [nickkk-skills](https://github.com/NickkkLian/nickkk-skills) marketplace. Add it once; after that each skill is one command.
-
-```
-/plugin marketplace add NickkkLian/nickkk-skills
-/plugin install nk-explorer@nickkk-skills
+```text
+selftest: 50/50
 ```
 
-1. In a Claude Code session, run the first line (once per machine).
-2. Run the second line.
-3. Start a new session (or run `/reload-plugins`). The skill shows up as `nk-explorer:nk-explorer`.
+`python3 scripts/make_explorer.py assets/concepts/loan-payment.json -o output/loan.html` (exit 0):
 
-Without opening a session, the same two steps work from a shell: `claude plugin marketplace add NickkkLian/nickkk-skills` then `claude plugin install nk-explorer@nickkk-skills`.
-
-### 3 · Claude desktop app (Code tab)
-
-**Add the marketplace first — Discover only searches marketplaces you have already added.**
-
-<img src="https://raw.githubusercontent.com/NickkkLian/nickkk-skills/main/gallery/panel-route/panel-route.gif" alt="Adding the marketplace and installing a skill in the desktop app" width="640">
-
-<sub>Recorded on 2026-09-16, when the marketplace listed ten skills, all at version 0.1.0; it lists more now. The repository list in this recording shows the recorder's own repositories because a GitHub account is connected; yours will show yours. Type the full name as in step 4.</sub>
-
-1. In the chat box, type `/plugin marketplace` and press Enter (or open **Settings → Customize → Plugins**). The **Plugins** panel opens.
-   <br><img src="https://raw.githubusercontent.com/NickkkLian/nickkk-skills/main/gallery/panel-route/step1-type-plugin-marketplace.png" alt="/plugin marketplace typed in the chat box" width="480">
-2. Top right, open **Add ▾** and choose **Add marketplace**.
-   <br><img src="https://raw.githubusercontent.com/NickkkLian/nickkk-skills/main/gallery/panel-route/step2-add-menu.png" alt="The Add menu with Add marketplace" width="480">
-3. Choose **Add from a repository**.
-   <br><img src="https://raw.githubusercontent.com/NickkkLian/nickkk-skills/main/gallery/panel-route/step3-add-from-repository.png" alt="Add marketplace dialog: Add from a repository" width="480">
-4. In **URL**, type the full `NickkkLian/nickkk-skills`. At the bottom of the list choose the row **Use "NickkkLian/nickkk-skills"**, then press **Sync**.
-   <br><img src="https://raw.githubusercontent.com/NickkkLian/nickkk-skills/main/gallery/panel-route/step4-url-then-sync.png" alt="URL filled in, Sync button" width="480">
-5. You land on **Discover**, filtered to the new marketplace (**Filter · 1**). Find **Nk explorer** and press **Add**. Installed ones show **✓ Added**.
-   <br><img src="https://raw.githubusercontent.com/NickkkLian/nickkk-skills/main/gallery/panel-route/step5-discover-add.png" alt="Discover list with Added and Add buttons" width="480">
-6. Close the panel and start a new session.
-
-To try it for one session without installing anything: `claude --plugin-dir ./nk-explorer` from a clone.
-
-### 4 · OpenAI Codex CLI
-
-```bash
-git clone https://github.com/NickkkLian/nk-explorer.git ~/.agents/skills/nk-explorer
+```text
+built output/loan.html: M = L * (i/1200) / (1 - (1 + i/1200)^(-12*y))  ·  controls L, i, y  ·  2 practice question(s)  ·  105736 bytes
+next: python3 scripts/explorer_check.py output/loan.html  and  python3 scripts/probe_check.py output/loan.html
 ```
 
-1. Run the command above (for one project only, clone into `.agents/skills/nk-explorer` inside that project).
-2. Start a new Codex session.
-3. Check it loaded, without spending a model call: `codex debug prompt-input | grep -o -- '- nk-explorer[a-z0-9:-]*' | sort -u` prints `- nk-explorer:nk-explorer:`. Codex adds the `nk-explorer:` prefix because this repository also carries a Claude Code plugin manifest. Ask for the task and the skill triggers on its own, or type `$` and pick it from the list.
+`python3 scripts/explorer_check.py output/loan.html` (exit 0):
 
-## Compatibility
-
-<details><summary>Which agents it was run in, and what each run did</summary>
-
-| Agent | Tested | What was checked |
-|---|---|---|
-| Claude Code (CLI 2.1.173, macOS) | yes | In a fresh project with an isolated Claude config, inside a macOS sandbox that blocked reading the tester's ~/.claude folder (settings, session history, memory), Desktop, Documents and Downloads, SSH keys and git identity, a plain request that never names the skill triggered it and it ran its bundled script. The brief asked for one page for a driving-theory class where students move the speed, the reaction time and the braking and watch the stopping-distance formula change, with practice questions they can check themselves; it never named the skill. In nine turns the run read an example concept and the format reference, tried the formula with scripts/formula.py, wrote a concept of its own, built the page with no refusal, and ran scripts/explorer_check.py (0 findings) and scripts/probe_check.py, which could not start Chrome's own sandbox inside the test sandbox, ran again with --no-sandbox and said so: 7 of 7 checks passed. That was the version before the outside audit; its concept, built again with the version released after it, gives 0 findings and 7 of 7 as well. What no check catches: its second question says “double the speed to 40 m/s” after a first question at 30 m/s, the kind of wording a person reads for in references/acceptance.md. |
-| OpenAI Codex CLI (0.155.0-alpha.9.2, gpt-5.6-sol, low reasoning, macOS) | partly | Copied into `~/.agents/skills` of a temporary home, in a fresh project, without the user's Codex config, with the same brief. Codex read SKILL.md, the concept format, the acceptance list and an example, wrote a concept that takes the speed in km/h, checked it with scripts/concept.py (0 problems), built the page and checked it with scripts/explorer_check.py (0 findings). scripts/probe_check.py got no report back from Chrome and said the page wrote none, as if the page were at fault; Codex then ran Chrome by hand, found it ended by signal 6 inside Codex's sandbox even without Chrome's own sandbox, and reported that the Chrome test could not run there. Its concept, built again with the version released after the outside audit, gives 0 findings and 6 of 6 probe checks. probe_check.py now names a Chrome that dies instead of blaming the page, and also retries without Chrome's sandbox when Chrome dies without a word; both were tested with a fake Chrome, not by running Codex again. |
-| Cursor, Gemini CLI | no | Not tested. Their documentation says both read `~/.agents/skills`, the folder route 4 clones into; Gemini CLI asks before it activates a skill. |
-
-This skill's frontmatter uses only name, description, license, compatibility and metadata.
-
-</details>
-
-## Verify
-
-```bash
-python3 scripts/concept.py --selftest
-python3 scripts/explorer_check.py --selftest
-python3 scripts/formula.py --selftest
-python3 scripts/make_explorer.py --selftest
-python3 scripts/numsrc.py --selftest
-python3 scripts/probe_check.py --selftest
+```text
+✔ loan.html: 0 findings
 ```
 
-<details><summary>What was broken on purpose before release, script by script</summary>
+`python3 scripts/probe_check.py output/loan.html` (exit 0, reviewer-recorded):
 
-Python 3.9+, standard library only; probe_check.py also needs Google Chrome or Chromium.
-90 checks in explorer_check.py and concept.py were broken on purpose, one at a time, in a sandbox copy,
-each turning the sample written for it red, none by a crash; so were 40 checks in probe_check.py, each against
-a page broken in the way that check is there to catch (or, for the checks on how Chrome is run, a stand-in Chrome).
-The 120 lines of those scripts that the matrices' pattern takes for reporting a finding were read from the source, not listed by hand: 6 only pass on what other lines found, and 1 is left out of the matrices. The one left out (a control that is not an object) is broken and run anyway: on a malformed control alone it crashes,
-but with a second problem in the same concept it drops its own message without a crash, and no sample catches that.
-The lines that print the findings and set the exit code, and explorer_check.py's line that passes on concept.py's
-findings, are not among the lines read; no matrix breaks them (see Limits). Opened in Chrome, a page with an outside font,
-an image list, an @import and an indirect eval added loaded none of them and ran no eval; a meta refresh, which no
-policy stops, is what explorer_check.py names. The page's formula language and its Python twin gave the same numbers
-and the same text on 2084 cases; on both the line with numbers worked out to the result, and
-both gave the round() answers in a table worked out by hand. A formatter planted in one twin was caught, and so, in both
-at once, were the old writer that put 1 × -3^2 for x = -3 and the 0.1.0 round(), floor() and ceil(), which rounded the
-binary working and gave 88.82 for round(8.5 × 10.45, 2) and 8 for ceil(2.1 ÷ 0.3), where the answers by hand are 88.83 and 7.
-make_explorer.py has a self-test but no break matrix.
-numsrc.py, the number-sources layer shared with four other skills: each of its 16 lines that report a
-finding was disabled in a sandbox copy, found by reading the source rather than listed by hand, and its self-test went
-red each time; the unmutated copy stayed green.
+```text
+$ python3 scripts/probe_check.py output/loan.html
+  ✔ P1 L: 5 moves, each changed the formula line and the chart and marked itself; 5 changed the result
+  ✔ P1 i: 5 moves, each changed the formula line and the chart and marked itself; 5 changed the result
+  ✔ P1 y: 5 moves, each changed the formula line and the chart and marked itself; 5 changed the result
+  ✔ P2 12 states: every formula line, result and readout is what the Python twin writes
+  ✔ P3 question 1 (compute): answer 948.974; passes typed three ways and half a tolerance off, fails two tolerances off and empty; Show sets the controls
+  ✔ P4 question 2 (reach): passes at i = 6, fails at the first failing setting and one step past the highest; the fixed controls lock
+6/6 checks pass
+[exit 0]
+```
+
+`python3 scripts/probe_check.py --selftest` (exit 0, reviewer-recorded):
+
+```text
+$ python3 scripts/probe_check.py --selftest
+  ✔ the starter behaves: 6 checks, all pass
+  ✔ the example at-least-one-success.json behaves: 5 checks, all pass
+  ✔ the example loan-payment.json behaves: 6 checks, all pass
+  ✔ the ball thrown up (a curve that turns back) behaves: 5 checks, all pass
+  ✔ a report for another formula → want P0 red, got ['P0']
+  ✔ a slider that is not wired → want P1 red, got ['P1', 'P2']
+  ✔ a probe that skips a control → want P1 red, got ['P1']
+  ✔ the wrong number marked → want P1 red, got ['P1']
+  ✔ a chart that never redraws → want P1 red, got ['P1']
+  ✔ a result that never updates → want P1 red, got ['P1', 'P2']
+  ✔ a result rounded its own way → want P2 red, got ['P2']
+  ✔ a formula line typed by hand → want P2 red, got ['P2']
+  ✔ a line with values written its own way → want P2 red, got ['P2']
+  ✔ a readout that drops the unit → want P2 red, got ['P2']
+  ✔ a value that drifts from its slider → want P2 red, got ['P2']
+  ✔ a probe that skips a state → want P2 red, got ['P2']
+  ✔ a missing value explained its own way → want P2 red, got ['P2']
+  ✔ a formula that goes wrong only at the question's values → want P3 red, got ['P3']
+  ✔ a grader that refuses exactly the page's own answer → want P3 red, got ['P3']
+  ✔ a grader that refuses an answer given to four decimal places → want P3 red, got ['P3']
+  ✔ a grader that does not read a unit → want P3 red, got ['P3']
+  ✔ a grader stricter than its tolerance → want P3 red, got ['P3']
+  ✔ a compute grader with a wider tolerance than it says → want P3 red, got ['P3']
+  ✔ a grader that passes an empty answer → want P3 red, got ['P3']
+  ✔ a Show button that moves the numbers and not the sliders → want P3 red, got ['P3']
+  ✔ a compute grader that wants the exact text → want P3 red, got ['P3']
+  ✔ a probe that skips a question → want P4 red, got ['P4']
+  ✔ a within goal graded tighter than its tolerance → want P4 red, got ['P4']
+  ✔ a probe that walks the settings in another order → want P4 red, got ['P4']
+  ✔ a Check that grades the starting values, not the sliders → want P4 red, got ['P4']
+  ✔ a reach Check that does not fix the question's values → want P4 red, got ['P4']
+  ✔ a Check that passes one wrong setting → want P4 red, got ['P4']
+  ✔ a reach grader that forgets lowest → want P4 red, got ['P4']
+  ✔ a probe that steps two past the answer → want P4 red, got ['P4']
+  ✔ a state with a control the page does not have → want P2 red, got ['P2']
+  ✔ a probe that steps past the end of the slider → want P4 red, got ['P4']
+  ✔ a reach grader that looks only one step further → want P4 red, got ['P4']
+  ✔ a probe that never looks past the answer's stretch → want P4 red, got ['P4']
+  ✔ a page without the battery gives no report rather than a pass
+  ✔ a page changed after it was sealed: the browser runs none of its scripts, and the script says why → the page's scripts are not the ones its Content-Se…
+  ✔ a Chrome that dies before the page runs is named, not the page → Chrome was ended by signal 6 before the page could run, with…
+  ✔ a Chrome that exits 0 and prints nothing is named, not the page → Chrome printed nothing, not even an empty page, before the p…
+  ✔ a --chrome path that is not there is not swapped for another Chrome
+  ✔ a Chrome that dies only inside its own sandbox gets a second try without it → 6 checks, the note says so
+  ✔ a Chrome that fails with a message inside its own sandbox gets a second try without it → 6 checks, the note says so
+  ✔ a Chrome that reports its sandbox failed inside its own sandbox gets a second try without it → 6 checks, the note says so
+  ✔ a Chrome that prints nothing inside its own sandbox gets a second try without it → 6 checks, the note says so
+probe_check selftest: 47/47 passed
+[exit 0]
+```
+
+`python3 scripts/make_explorer.py --concept-of output/loan.html` (exit 0):
+
+```text
+{
+  "title": "What a loan costs each month",
+  "question": "A loan paid back in equal monthly payments: how big is each payment, and what moves it most?",
+  "result": {
+    "name": "M",
+    "label": "Monthly payment",
+    "unit": "£"
+  },
+  "formula": "L * (i/1200) / (1 - (1 + i/1200)^(-12*y))",
+  "controls": [
+    {
+      "name": "L",
+      "label": "Amount borrowed",
+      "unit": "£",
+      "min": 10000,
+      "max": 500000,
+      "step": 5000,
+      "value": 200000
+    },
+    {
+      "name": "i",
+      "label": "Yearly interest rate",
+      "unit": "%",
+      "min": 0.5,
+      "max": 12,
+      "step": 0.25,
+      "value": 5
+    },
+    {
+      "name": "y",
+      "label": "Years to pay it back",
+      "unit": "years",
+      "min": 1,
+      "max": 35,
+      "step": 1,
+      "value": 25,
+      "unit_one": "year"
+    }
+  ],
+  "chart": {
+    "x": "y",
+    "title": "The monthly payment for each length of loan"
+  },
+  "notes": [
+    "The rate is fixed for the whole loan.",
+    "Interest is charged every month at a twelfth of the yearly rate.",
+    "Fees, insurance and paying early are left out."
+  ],
+  "source": "the standard level-payment (annuity) formula used for repayment mortgages and personal loans.",
+  "practice": [
+    {
+      "type": "compute",
+      "prompt": "£150,000 borrowed at 4.5% a year, paid back over 20 years. What is the monthly payment?",
+      "set": {
+        "L": 150000,
+        "i": 4.5,
+        "y": 20
+      },
+      "tolerance": 0.5
+    },
+    {
+      "type": "reach",
+      "prompt": "£300,000 over 30 years: what is the highest rate at which the payment is £1,800 a month or less?",
+      "fixed": {
+        "L": 300000,
+        "y": 30
+      },
+      "goal": "at most",
+      "target": 1800,
+      "highest": "i"
+    }
+  ]
+}
+```
+
+`python3 scripts/numsrc.py check output/loan.html` (exit 0):
+
+```text
+N05 warning: control.y: source is unused
+N05 warning: control.i: source is unused
+N05 warning: control.L: source is unused
+```
+
+The source-markup check warns that the three control entries are unused; this does not verify clicking their readouts.
 
 </details>
 
 ## Limits
 
-<details><summary>What it does not do, in full</summary>
+One formula and sliders only; no systems of equations, tables or derivations. The chart is a slice through the
+current settings. Its scale heuristic can omit valid extremes, and sampling can miss narrow features or
+discontinuities. Display rounding does not change grading; magnitudes of 10^21 or more use the ordinary formatter.
+The page states what the formula leaves out, its source and that it is not advice; the checks cannot establish
+whether the formula fits a person's case.
 
-- **One formula, one result, sliders only.** No systems of equations, no step-by-step derivations, no dropdowns or switches. Each control is a number on a grid of at most 2,000 steps, and a page has one to six of them.
-- **Formulas only, not code or queries.** A concept that is really a query over a table (GROUP BY, a join) is not this version's; a table-and-query kind is planned for 0.2.
-- **The chart moves one control and holds the rest where they are.** It is a slice, not a map of everything.
-- **Answers are read as plain numbers.** The result's unit, a currency sign and % are removed; commas may only separate groups of three digits (2,318.55), and e-notation is read because the page writes very large and very small results that way. A decimal comma (2318,55), a misplaced comma (23,18.55) and hex (0x90F) are not numbers here: the page says "Type a number."
-- **It cannot tell whether the formula fits a case.** The page says where the formula comes from and what it leaves out; whether it applies to somebody's own loan or experiment is theirs to judge, and the footer says so.
-- **The checks read the page as built, and the policy does not hold every edit.** Tested in Chrome, the page's policy stops an outside font, image or stylesheet, an @import and eval, and a script changed without its hash does not run. It does not stop: an edit that removes or loosens the policy line (explorer_check.py refuses that page, E09); anything placed before the policy line, which makes Chrome ignore the policy (E09 names such a page); a meta refresh (E09 names it); a script that navigates away (`location.assign`, `location =`, `window.open`), which explorer_check.py does not name; and a script whose hashes are written again after the edit, which then runs. Text can be changed to say anything. Run explorer_check.py and probe_check.py again after any edit, or build the page again.
-- **E10 covers the usual ways of writing markup, not all of them.** It names innerHTML, outerHTML, insertAdjacentHTML and the others it lists, written that way; `el["inner" + "HTML"] = …` or `setHTMLUnsafe(…)` added to a page with its hashes written again gets no finding.
-- **The checkers' own command lines are not break-tested.** The break matrices cover the lines that report a finding, not the lines that print the findings and set the exit code, nor explorer_check.py's line that passes on concept.py's findings. Changing explorer_check.py's exit code to 0 left every self-test green; a run then prints its findings but exits 0.
+Checks cover the listed patterns, not every possible script edit. Rewriting hashes or weakening the policy can
+change what a browser runs; recheck or rebuild after edits. The checker command-line exit paths have no mutation
+coverage. Human inspection remains necessary before sharing a page.
 
-</details>
+## Provenance and license
 
-## License
-
-MIT. Read a script before letting it run in your environment.
+The ideas of showing the calculation behind every interaction and grading on the result come from Query Mirror,
+the author's SQL teaching tool. The appearance uses the shared design tokens. MIT.
