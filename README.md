@@ -1,14 +1,27 @@
 # nk-explorer
 
-Version **0.1.6**. For teachers and writers using a coding agent to explain one formula with a calculator,
+Turn a formula into an offline page with sliders, a curve and practice questions graded on the result.
+
+Ask your coding agent, for example:
+
+> Use nk-explorer to explain a £200,000 loan at 5% interest. Let me change the years to pay it back and practise reading the monthly payment.
+
+![nk-explorer: the bundled loan example, with an answer, slider and curve](https://raw.githubusercontent.com/NickkkLian/nickkk-skills/main/gallery/results/nk-explorer.png)
+
+**Re-checked against Python:** £1169.18/month at 25 years; £1045.02 at 32 years. The loan page passes [6/6 browser checks](#how-this-version-was-tried).
+
+[Download the loan page](output/loan.html) and open it locally. Version **0.1.7**; the download has the updated axes.
+
+## What it makes
+
+For teachers and writers using a coding agent to explain one formula with a calculator,
 one main slider and a graph. Generate an HTML page, then check it and inspect it in the browser you intend to use.
 The page is designed to open locally and work offline in a modern browser.
 
-![nk-explorer: a page made from one sentence: the question, the answer with its unit, one slider beside the curve](https://raw.githubusercontent.com/NickkkLian/nickkk-skills/main/gallery/results/nk-explorer.png)
-
 **The loan example starts at £1169.18 per month.** Its comparison shows £1169.18 over 25 years versus £1045.02
-over 32 years with the other inputs unchanged. Generate [output/loan.html](output/loan.html) below to see the
+over 32 years with the other inputs unchanged. The shipped [output/loan.html](output/loan.html) shows the
 question, answer and curve, expandable calculation and settings, and practice questions graded on the result.
+The picture above is that page. Regenerate it with the commands below after editing its concept.
 
 ## Try it from a checkout
 
@@ -31,6 +44,16 @@ python3 scripts/formula.py --selftest
 python3 scripts/make_explorer.py --selftest
 python3 scripts/numsrc.py --selftest
 ```
+
+With Node available, also check the template's axis labels and scale without launching a browser:
+
+```bash
+node scripts/chart_check.js --selftest
+node scripts/chart_check.js output/loan.html
+```
+
+This runs the page's formula and chart functions with a minimal SVG document; browser layout and interaction
+still need the Chrome check and human inspection below. The builder and Python checks require no Node.
 
 Open `output/loan.html` and inspect it. Where Chrome/Chromium and permission to launch it are available, also run:
 
@@ -82,6 +105,9 @@ The chart samples 201 points. Undefined samples break the curve. A sparse extrem
 curve and scale; a note gives the omitted count and visible bounds. The current answer remains in the headline,
 and an off-range dot is omitted and explained. The exact rule and its limits are in the format reference.
 Both axes identify the quantity and unit. The existing design tokens provide the colours and typography.
+Axis labels use grouped numbers and only the decimals needed to distinguish ticks: `£15,000`, rather than
+`£15000.00`. Set `chart.locale` to the request's language and region, such as `en-GB` or `de-DE`.
+This affects axes only; headline, formula, slider readouts and answer parsing retain their existing rules.
 
 ## Layout target
 
@@ -109,6 +135,12 @@ still requires recomputation outside the page.
 
 ## How this version was tried
 
+The 0.1.7 offline run passed concept 32/32, explorer_check 105/105, formula 44/44, make_explorer 12/12,
+numsrc 50/50 and the new chart regressions 14/14. All three shipped concepts built with 0 file findings;
+the number-source checker emitted only the documented warnings for control readouts created at runtime.
+The new chart tests passed 6/14 on the old template, failing the grouped currency labels and loan scale cases.
+Chrome was not launched for 0.1.7. The browser recordings below are historical 0.1.6 evidence.
+
 The supplied reports describe two agents who did not build the skill, each choosing three requests. The first
 tried bill sharing, running time and kinetic energy: its report records correct numbers, missing units and a
 running-time chart flattened near zero speed; two pages felt like generic worksheets. The second tried
@@ -126,7 +158,7 @@ A reviewer ran the skill's browser checker in headless Chrome on bill sharing, r
 population growth and probability: the supplied reports total 25/25 checks passed. The first screen was also
 inspected at 1366 × 768.
 
-The current loan page then passed 6/6 browser checks, and the browser self-test passed 47/47 on Python 3.13.9
+The 0.1.6 loan page then passed 6/6 browser checks, and the browser self-test passed 47/47 on Python 3.13.9
 and 47/47 on Python 3.9.6, all with exit 0. These runs used macOS 15.7.3 and Google Chrome 156 beta on the
 current tree and the fresh lab copy; their printed outputs are recorded below. One earlier run of the same
 self-test passed 45/47; two repeat runs passed 47/47. The cause of the earlier failures was not established.
