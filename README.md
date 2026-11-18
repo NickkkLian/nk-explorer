@@ -9,7 +9,7 @@ Ask your coding agent, for example:
 ![nk-explorer: the bundled loan example, with an answer, slider and curve](https://raw.githubusercontent.com/NickkkLian/nickkk-skills/main/gallery/results/nk-explorer.png)
 
 **The loan example starts at £1169.18 per month** over 25 years, set beside £1045.02 over 32 years with the other
-inputs unchanged. Every slider shows the sum it changes, and the practice questions are graded on the result.
+inputs unchanged. Every slider shows the sum it changes.
 [Download the loan page](output/loan.html) and open it locally.
 
 Part of [nickkk-skills](https://github.com/NickkkLian/nickkk-skills): 14 agent skills that work with numbers, check an agent's work, guard a repository, and write and present.
@@ -20,9 +20,9 @@ For teachers and writers using a coding agent to explain one formula with a calc
 one main slider and a graph. Generate an HTML page, then check it and inspect it in the browser you intend to use.
 The page is designed to open locally and work offline in a modern browser.
 
-The shipped [output/loan.html](output/loan.html), the loan example above, shows the
-question, answer and curve, expandable calculation and settings, and practice questions graded on the result.
-The picture above is that page. Regenerate it with the commands below after editing its concept.
+The shipped [output/loan.html](output/loan.html) is the page in the picture above: question, answer and curve,
+expandable calculation and settings, and practice questions. Regenerate it with the commands below after editing
+its concept.
 
 ## Try it from a checkout
 
@@ -143,9 +143,8 @@ directory; leave it unset for an uncached check after edits. Chrome may have its
 `python3 scripts/numsrc.py check output/loan.html` checks number-source markup without writing output files.
 `python3 scripts/make_explorer.py --concept-of output/loan.html` prints the embedded JSON without writing a file.
 
-This is version **0.1.7**; the download has the updated axes. The loan figures above were re-checked against Python
-(£1169.18/month at 25 years; £1045.02 at 32 years), and the loan page passed 6/6 browser checks in the 0.1.6
-recordings. The full test record for this version, the browser recordings and the reports of the agents who tried
+This is version **0.1.7**. The loan figures above were re-checked against Python, and the loan page passed 6/6
+browser checks in the 0.1.6 recordings. The full test record for this version, the browser recordings and the reports of the agents who tried
 it are in [VERIFICATION.md](VERIFICATION.md).
 
 ## Limits
